@@ -1,0 +1,105 @@
+* {
+    box-sizing: border-box;
+    padding: 0;
+    margin: 0;
+}
+
+html,
+body {
+    max-width: 100vw;
+    overflow-x: hidden;
+    font-family:
+        -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue",
+        Arial, sans-serif;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+}
+
+body {
+    background: #f0f2f5;
+}
+
+/* 키오스크 스타일 */
+.ant-btn {
+    min-height: 44px;
+    font-size: 16px !important;
+    border-radius: 12px !important;
+}
+
+.ant-btn-lg {
+    min-height: 56px;
+    font-size: 18px !important;
+}
+
+.ant-card {
+    border-radius: 16px !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08) !important;
+}
+
+.ant-input,
+.ant-select-selector,
+.ant-picker {
+    min-height: 44px !important;
+    font-size: 16px !important;
+    border-radius: 12px !important;
+}
+
+.ant-table {
+    font-size: 15px;
+}
+
+.ant-table-thead > tr > th {
+    font-weight: 600;
+    background: #fafafa !important;
+}
+
+.ant-modal-content {
+    border-radius: 16px !important;
+}
+
+.ant-modal-header {
+    border-radius: 16px 16px 0 0 !important;
+}
+
+.ant-tag {
+    font-size: 14px;
+    padding: 4px 12px;
+    border-radius: 8px;
+}
+
+/* 큰 터치 영역 */
+.kiosk-seat-card {
+    min-height: 280px;
+    cursor: pointer;
+    transition:
+        transform 0.2s,
+        box-shadow 0.2s;
+}
+
+.kiosk-seat-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12) !important;
+}
+
+.kiosk-seat-card:active {
+    transform: scale(0.98);
+}
+
+/* 스크롤바 숨기기 (키오스크용) */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #d9d9d9;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #bfbfbf;
+}
