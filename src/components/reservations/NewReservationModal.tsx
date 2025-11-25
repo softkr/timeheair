@@ -199,6 +199,7 @@ export function NewReservationModal({
             minuteStep={30}
             disabledTime={disabledTime}
             style={{ width: "100%" }}
+            needConfirm={false}
           />
         </Form.Item>
 
