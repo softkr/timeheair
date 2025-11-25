@@ -264,7 +264,7 @@ export function StartServiceModal({
       styles={{ body: { padding: "24px" } }}
     >
       <Form form={form} layout="vertical">
-        {/* 고객 유형 선택 */}
+        {/* 회원 유형 선택 */}
         <div style={{ marginBottom: 16 }}>
           <Text
             style={{
@@ -274,7 +274,7 @@ export function StartServiceModal({
               display: "block",
             }}
           >
-            고객 유형
+            회원 유형
           </Text>
           <Row gutter={12}>
             <Col span={8}>
