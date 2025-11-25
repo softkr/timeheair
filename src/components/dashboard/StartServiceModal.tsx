@@ -464,30 +464,9 @@ export function StartServiceModal({
               </Form.Item>
             )}
 
-            {customerType === "guest" && (
-              <Form.Item
-                name="memberName"
-                label={
-                  <span style={{ fontSize: 16, fontWeight: 500 }}>
-                    <UserOutlined style={{ marginRight: 8 }} />
-                    손님 이름 (선택)
-                  </span>
-                }
-                style={{ marginBottom: 16 }}
-              >
-                <Input
-                  placeholder="미입력 시 '손님1' 형식으로 자동 생성"
-                  size="large"
-                  style={{ height: 40 }}
-                />
-              </Form.Item>
-            )}
-
-            {customerType !== "guest" && (
-              <Form.Item name="memberName" hidden>
-                <Input />
-              </Form.Item>
-            )}
+            <Form.Item name="memberName" hidden>
+              <Input />
+            </Form.Item>
           </Col>
           <Col span={12}>
             <Form.Item
