@@ -475,10 +475,7 @@ export function StartServiceModal({
                 }
                 style={{ marginBottom: 16 }}
               >
-                <Input
-                  placeholder="미입력 시 '손님1' 형식으로 자동 생성"
-                  size="large"
-                />
+                <Input placeholder="미입력 시 '손님1' 형식으로 자동 생성" />
               </Form.Item>
             )}
 
