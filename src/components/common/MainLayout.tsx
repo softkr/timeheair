@@ -165,12 +165,13 @@ export function MainLayout({ children }: MainLayoutProps) {
         {/* 로고 영역 */}
         <div
           style={{
-            height: 100,
+            height: 160,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             borderBottom: "1px solid rgba(255,255,255,0.08)",
             background: "rgba(255,255,255,0.02)",
+            paddingTop: 20,
           }}
         >
           <div
@@ -179,7 +180,7 @@ export function MainLayout({ children }: MainLayoutProps) {
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
-              gap: "12px",
+              gap: "8px",
             }}
           >
             <Logo size="medium" />
