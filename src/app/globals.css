@@ -83,6 +83,36 @@ body {
 
 .ant-input-affix-wrapper > input.ant-input {
     font-size: 17px !important;
+    height: auto !important;
+    padding: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    outline: none !important;
+    background: transparent !important;
+}
+
+.ant-input-affix-wrapper > input.ant-input:focus {
+    border: none !important;
+    box-shadow: none !important;
+    outline: none !important;
+}
+
+.ant-input-affix-wrapper {
+    display: flex !important;
+    align-items: center !important;
+}
+
+.ant-input:focus,
+.ant-input-focused,
+.ant-input-affix-wrapper:focus,
+.ant-input-affix-wrapper-focused {
+    border-color: #667eea !important;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15) !important;
+}
+
+.ant-input:hover,
+.ant-input-affix-wrapper:hover {
+    border-color: #667eea !important;
 }
 
 .ant-select-selector {
@@ -319,7 +349,8 @@ body {
    애니메이션
    ======================================== */
 @keyframes subtlePulse {
-    0%, 100% {
+    0%,
+    100% {
         box-shadow: 0 4px 12px rgba(255, 77, 79, 0.15);
     }
     50% {
@@ -585,4 +616,26 @@ body {
     .ant-message {
         bottom: 140px !important;
     }
+}
+
+/* ========================================
+   브라우저 자동완성 스타일 덮어쓰기
+   ======================================== */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 1000px #fff inset !important;
+    box-shadow: 0 0 0 1000px #fff inset !important;
+    -webkit-text-fill-color: #333 !important;
+    transition: background-color 5000s ease-in-out 0s !important;
+}
+
+.ant-input-affix-wrapper input:-webkit-autofill,
+.ant-input-affix-wrapper input:-webkit-autofill:hover,
+.ant-input-affix-wrapper input:-webkit-autofill:focus,
+.ant-input-affix-wrapper input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 1000px #fff inset !important;
+    box-shadow: 0 0 0 1000px #fff inset !important;
+    -webkit-text-fill-color: #333 !important;
 }

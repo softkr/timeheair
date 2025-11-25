@@ -37,7 +37,8 @@ export default function LoginPage() {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)",
+        background:
+          "linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)",
         padding: 32,
       }}
     >
@@ -96,48 +97,36 @@ export default function LoginPage() {
         >
           <Form.Item
             name="username"
-            label={<span style={{ fontSize: 15, fontWeight: 500, color: "#555" }}>아이디</span>}
             rules={[{ required: true, message: "아이디를 입력해주세요" }]}
             style={{ marginBottom: 20 }}
           >
             <Input
-              prefix={
-                <UserOutlined
-                  style={{ fontSize: 20, color: "#999", marginRight: 8 }}
-                />
-              }
+              prefix={<UserOutlined style={{ fontSize: 20, color: "#999" }} />}
               placeholder="아이디를 입력하세요"
               aria-label="아이디"
               style={{
-                height: 64,
-                fontSize: 18,
-                borderRadius: 16,
+                height: 56,
+                fontSize: 17,
+                borderRadius: 12,
                 border: "2px solid #e8e8e8",
-                paddingLeft: 20,
               }}
             />
           </Form.Item>
 
           <Form.Item
             name="password"
-            label={<span style={{ fontSize: 15, fontWeight: 500, color: "#555" }}>비밀번호</span>}
             rules={[{ required: true, message: "비밀번호를 입력해주세요" }]}
             style={{ marginBottom: 20 }}
           >
             <Input.Password
-              prefix={
-                <LockOutlined
-                  style={{ fontSize: 20, color: "#999", marginRight: 8 }}
-                />
-              }
+              prefix={<LockOutlined style={{ fontSize: 20, color: "#999" }} />}
               placeholder="비밀번호를 입력하세요"
               aria-label="비밀번호"
               style={{
-                height: 64,
-                fontSize: 18,
-                borderRadius: 16,
+                height: 56,
+                fontSize: 17,
+                borderRadius: 12,
                 border: "2px solid #e8e8e8",
-                paddingLeft: 20,
               }}
             />
           </Form.Item>
