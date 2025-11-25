@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Modal,
   Form,
@@ -21,10 +21,12 @@ import {
   UserOutlined,
   TeamOutlined,
   ShoppingCartOutlined,
+  CalendarOutlined,
 } from "@ant-design/icons";
 import { useStore } from "@/lib/store/useStore";
 import { serviceMenus, serviceCategories } from "@/lib/data/services";
-import type { SelectedService } from "@/lib/api/client";
+import type { SelectedService, Reservation } from "@/lib/api/client";
+import dayjs from "dayjs";
 
 const { Text, Title } = Typography;
 
@@ -40,6 +42,7 @@ interface StartServiceModalProps {
       staffId: string;
       services: SelectedService[];
       totalPrice: number;
+      reservationId?: string | null;
     },
   ) => void;
 }
@@ -50,7 +53,7 @@ export function StartServiceModal({
   onClose,
   onStart,
 }: StartServiceModalProps) {
-  const { staff, members, incrementGuestCounter } = useStore();
+  const { staff, members, reservations, incrementGuestCounter } = useStore();
   const [form] = Form.useForm();
   const [selectedServices, setSelectedServices] = useState<SelectedService[]>(
     [],
@@ -58,6 +61,30 @@ export function StartServiceModal({
   const [selectedCategory, setSelectedCategory] =
     useState<string>("기본 서비스");
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
+  const [selectedReservationId, setSelectedReservationId] = useState<
+    string | null
+  >(null);
+  const [customerType, setCustomerType] = useState<
+    "member" | "reservation" | "guest"
+  >("guest");
+
+  // 오늘 예약 중 대기 상태인 것만 필터링
+  const todayReservations = reservations.filter((r) => {
+    return (
+      dayjs(r.reservedAt).isSame(dayjs(), "day") && r.status === "scheduled"
+    );
+  });
+
+  // 모달 열릴 때 초기화
+  useEffect(() => {
+    if (open) {
+      setCustomerType("guest");
+      setSelectedMemberId(null);
+      setSelectedReservationId(null);
+      setSelectedServices([]);
+      form.resetFields();
+    }
+  }, [open, form]);
 
   const handleAddService = (
     menu: (typeof serviceMenus)[0],
@@ -94,19 +121,44 @@ export function StartServiceModal({
     form.validateFields().then((values) => {
       if (seatId === null) return;
 
-      const memberName = values.memberName || incrementGuestCounter();
+      let memberName = "";
+      let memberId: string | null = null;
+      let reservationId: string | null = null;
+
+      if (customerType === "reservation" && selectedReservationId) {
+        const reservation = reservations.find(
+          (r) => r.id === selectedReservationId,
+        );
+        if (reservation) {
+          memberName = reservation.memberName || "손님(예약)";
+          memberId = reservation.memberId || null;
+          reservationId = reservation.id;
+        }
+      } else if (customerType === "member" && selectedMemberId) {
+        const member = members.find((m) => m.id === selectedMemberId);
+        if (member) {
+          memberName = member.name;
+          memberId = member.id;
+        }
+      } else {
+        memberName = values.memberName || incrementGuestCounter();
+      }
 
       onStart(seatId, {
-        memberId: selectedMemberId,
+        memberId,
         memberName,
         staffId: values.staffId,
         services: selectedServices,
         totalPrice,
+        reservationId,
       });
 
       form.resetFields();
       setSelectedServices([]);
       setSelectedCategory("기본 서비스");
+      setSelectedMemberId(null);
+      setSelectedReservationId(null);
+      setCustomerType("guest");
       onClose();
     });
   };
@@ -116,6 +168,8 @@ export function StartServiceModal({
     setSelectedServices([]);
     setSelectedCategory("기본 서비스");
     setSelectedMemberId(null);
+    setSelectedReservationId(null);
+    setCustomerType("guest");
     onClose();
   };
 
@@ -131,6 +185,37 @@ export function StartServiceModal({
     }
   };
 
+  const handleReservationSelect = (reservationId: string | null) => {
+    setSelectedReservationId(reservationId);
+    if (reservationId) {
+      const reservation = reservations.find((r) => r.id === reservationId);
+      if (reservation) {
+        form.setFieldValue(
+          "memberName",
+          reservation.memberName || "손님(예약)",
+        );
+        form.setFieldValue("staffId", reservation.staffId);
+        // 예약의 서비스 목록 자동 설정
+        setSelectedServices(reservation.services || []);
+      }
+    } else {
+      form.setFieldValue("memberName", "");
+      setSelectedServices([]);
+    }
+  };
+
+  const handleCustomerTypeChange = (
+    type: "member" | "reservation" | "guest",
+  ) => {
+    setCustomerType(type);
+    setSelectedMemberId(null);
+    setSelectedReservationId(null);
+    form.setFieldValue("memberName", "");
+    if (type !== "reservation") {
+      setSelectedServices([]);
+    }
+  };
+
   const filteredMenus = serviceMenus.filter(
     (m) => m.category === selectedCategory,
   );
@@ -138,6 +223,11 @@ export function StartServiceModal({
   // 선택된 멤버 정보
   const selectedMember = selectedMemberId
     ? members.find((m) => m.id === selectedMemberId)
+    : null;
+
+  // 선택된 예약 정보
+  const selectedReservation = selectedReservationId
+    ? reservations.find((r) => r.id === selectedReservationId)
     : null;
 
   return (
@@ -174,73 +264,229 @@ export function StartServiceModal({
       styles={{ body: { padding: "24px" } }}
     >
       <Form form={form} layout="vertical">
+        {/* 고객 유형 선택 */}
+        <div style={{ marginBottom: 16 }}>
+          <Text
+            style={{
+              fontSize: 16,
+              fontWeight: 500,
+              marginBottom: 8,
+              display: "block",
+            }}
+          >
+            고객 유형
+          </Text>
+          <Row gutter={12}>
+            <Col span={8}>
+              <Button
+                block
+                type={customerType === "reservation" ? "primary" : "default"}
+                onClick={() => handleCustomerTypeChange("reservation")}
+                icon={<CalendarOutlined />}
+                size="large"
+                style={{
+                  height: 52,
+                  borderRadius: 12,
+                  fontSize: 16,
+                }}
+                disabled={todayReservations.length === 0}
+              >
+                예약 손님{" "}
+                {todayReservations.length > 0 &&
+                  `(${todayReservations.length})`}
+              </Button>
+            </Col>
+            <Col span={8}>
+              <Button
+                block
+                type={customerType === "member" ? "primary" : "default"}
+                onClick={() => handleCustomerTypeChange("member")}
+                icon={<UserOutlined />}
+                size="large"
+                style={{
+                  height: 52,
+                  borderRadius: 12,
+                  fontSize: 16,
+                }}
+              >
+                회원
+              </Button>
+            </Col>
+            <Col span={8}>
+              <Button
+                block
+                type={customerType === "guest" ? "primary" : "default"}
+                onClick={() => handleCustomerTypeChange("guest")}
+                size="large"
+                style={{
+                  height: 52,
+                  borderRadius: 12,
+                  fontSize: 16,
+                }}
+              >
+                일반 손님
+              </Button>
+            </Col>
+          </Row>
+        </div>
+
         {/* 고객 및 담당자 선택 */}
         <Row gutter={20}>
           <Col span={12}>
-            <Form.Item
-              label={
-                <span style={{ fontSize: 16, fontWeight: 500 }}>
-                  <UserOutlined style={{ marginRight: 8 }} />
-                  고객 선택
-                </span>
-              }
-              style={{ marginBottom: 16 }}
-            >
-              <Select
-                placeholder="멤버 검색 (미선택시 손님)"
-                size="large"
-                style={{ width: "100%" }}
-                allowClear
-                showSearch
-                optionFilterProp="children"
-                value={selectedMemberId}
-                onChange={handleMemberSelect}
+            {customerType === "reservation" && (
+              <Form.Item
+                label={
+                  <span style={{ fontSize: 16, fontWeight: 500 }}>
+                    <CalendarOutlined style={{ marginRight: 8 }} />
+                    예약 선택
+                  </span>
+                }
+                style={{ marginBottom: 16 }}
               >
-                {members.map((m) => (
-                  <Select.Option key={m.id} value={m.id}>
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                      }}
-                    >
-                      <span>
-                        {m.name} <Text type="secondary">({m.phone})</Text>
-                      </span>
-                      {(m.stamps || 0) >= 10 && (
-                        <Tag color="green" style={{ marginLeft: 8 }}>
-                          혜택가능
-                        </Tag>
-                      )}
-                    </div>
-                  </Select.Option>
-                ))}
-              </Select>
-              {selectedMember && (
-                <div
-                  style={{
-                    marginTop: 8,
-                    padding: "8px 12px",
-                    background: "#f0f5ff",
-                    borderRadius: 8,
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                  }}
+                <Select
+                  placeholder="예약 손님 선택"
+                  size="large"
+                  style={{ width: "100%" }}
+                  allowClear
+                  value={selectedReservationId}
+                  onChange={handleReservationSelect}
                 >
-                  <Text style={{ fontSize: 14 }}>
-                    스탬프: <strong>{selectedMember.stamps || 0}/10</strong>
-                  </Text>
-                  {(selectedMember.stamps || 0) >= 10 && (
-                    <Tag color="green">혜택 적용 가능</Tag>
-                  )}
-                </div>
-              )}
-            </Form.Item>
-            <Form.Item name="memberName" hidden>
-              <Input />
-            </Form.Item>
+                  {todayReservations.map((r) => (
+                    <Select.Option key={r.id} value={r.id}>
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                        }}
+                      >
+                        <span>
+                          <Tag color="blue">
+                            {dayjs(r.reservedAt).format("HH:mm")}
+                          </Tag>
+                          {r.memberName || "손님(예약)"}
+                        </span>
+                        <Text type="secondary" style={{ fontSize: 13 }}>
+                          {r.staffName}
+                        </Text>
+                      </div>
+                    </Select.Option>
+                  ))}
+                </Select>
+                {selectedReservation && (
+                  <div
+                    style={{
+                      marginTop: 8,
+                      padding: "8px 12px",
+                      background: "#e6f7ff",
+                      borderRadius: 8,
+                    }}
+                  >
+                    <Text style={{ fontSize: 14 }}>
+                      서비스:{" "}
+                      {selectedReservation.services
+                        ?.map((s) => s.name)
+                        .join(", ") || "-"}
+                    </Text>
+                    <br />
+                    <Text style={{ fontSize: 14 }}>
+                      금액:{" "}
+                      <strong>
+                        {formatPrice(selectedReservation.totalPrice)}
+                      </strong>
+                    </Text>
+                  </div>
+                )}
+              </Form.Item>
+            )}
+
+            {customerType === "member" && (
+              <Form.Item
+                label={
+                  <span style={{ fontSize: 16, fontWeight: 500 }}>
+                    <UserOutlined style={{ marginRight: 8 }} />
+                    회원 선택
+                  </span>
+                }
+                style={{ marginBottom: 16 }}
+              >
+                <Select
+                  placeholder="회원 검색"
+                  size="large"
+                  style={{ width: "100%" }}
+                  allowClear
+                  showSearch
+                  optionFilterProp="children"
+                  value={selectedMemberId}
+                  onChange={handleMemberSelect}
+                >
+                  {members.map((m) => (
+                    <Select.Option key={m.id} value={m.id}>
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                        }}
+                      >
+                        <span>
+                          {m.name} <Text type="secondary">({m.phone})</Text>
+                        </span>
+                        {(m.stamps || 0) >= 10 && (
+                          <Tag color="green" style={{ marginLeft: 8 }}>
+                            혜택가능
+                          </Tag>
+                        )}
+                      </div>
+                    </Select.Option>
+                  ))}
+                </Select>
+                {selectedMember && (
+                  <div
+                    style={{
+                      marginTop: 8,
+                      padding: "8px 12px",
+                      background: "#f0f5ff",
+                      borderRadius: 8,
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                    }}
+                  >
+                    <Text style={{ fontSize: 14 }}>
+                      스탬프: <strong>{selectedMember.stamps || 0}/10</strong>
+                    </Text>
+                    {(selectedMember.stamps || 0) >= 10 && (
+                      <Tag color="green">혜택 적용 가능</Tag>
+                    )}
+                  </div>
+                )}
+              </Form.Item>
+            )}
+
+            {customerType === "guest" && (
+              <Form.Item
+                name="memberName"
+                label={
+                  <span style={{ fontSize: 16, fontWeight: 500 }}>
+                    <UserOutlined style={{ marginRight: 8 }} />
+                    손님 이름 (선택)
+                  </span>
+                }
+                style={{ marginBottom: 16 }}
+              >
+                <Input
+                  placeholder="미입력 시 '손님1' 형식으로 자동 생성"
+                  size="large"
+                />
+              </Form.Item>
+            )}
+
+            {customerType !== "guest" && (
+              <Form.Item name="memberName" hidden>
+                <Input />
+              </Form.Item>
+            )}
           </Col>
           <Col span={12}>
             <Form.Item
