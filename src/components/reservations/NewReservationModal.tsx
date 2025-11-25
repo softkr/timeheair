@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Modal,
   Form,
@@ -12,11 +12,12 @@ import {
   Divider,
   Button,
   Space,
+  message,
 } from "antd";
 import { PlusOutlined, DeleteOutlined } from "@ant-design/icons";
 import { useStore } from "@/lib/store/useStore";
 import { serviceMenus, serviceCategories } from "@/lib/data/services";
-import { SelectedService, Reservation } from "@/lib/types";
+import type { SelectedService, ReservationRequest } from "@/lib/api/client";
 import dayjs from "dayjs";
 
 const { Text } = Typography;
@@ -24,7 +25,7 @@ const { Text } = Typography;
 interface NewReservationModalProps {
   open: boolean;
   onClose: () => void;
-  onAdd: (reservation: Reservation) => void;
+  onAdd: (reservation: ReservationRequest) => Promise<unknown>;
 }
 
 export function NewReservationModal({
@@ -32,12 +33,22 @@ export function NewReservationModal({
   onClose,
   onAdd,
 }: NewReservationModalProps) {
-  const { staff, members, incrementGuestCounter } = useStore();
+  const { staff, fetchStaff, members, fetchMembers, incrementGuestCounter } =
+    useStore();
   const [form] = Form.useForm();
   const [selectedServices, setSelectedServices] = useState<SelectedService[]>(
     [],
   );
   const [selectedCategory, setSelectedCategory] = useState<string>("");
+  const [submitting, setSubmitting] = useState(false);
+
+  // 모달 열릴 때 데이터 로드
+  useEffect(() => {
+    if (open) {
+      fetchStaff();
+      fetchMembers();
+    }
+  }, [open, fetchStaff, fetchMembers]);
 
   const handleAddService = () => {
     setSelectedServices([...selectedServices, { name: "", price: 0 }]);
@@ -88,8 +99,11 @@ export function NewReservationModal({
     return new Intl.NumberFormat("ko-KR").format(price) + "원";
   };
 
-  const handleSubmit = () => {
-    form.validateFields().then((values) => {
+  const handleSubmit = async () => {
+    try {
+      const values = await form.validateFields();
+      setSubmitting(true);
+
       const staffMember = staff.find((s) => s.id === values.staffId);
       const memberName = values.memberName || incrementGuestCounter();
 
@@ -98,28 +112,32 @@ export function NewReservationModal({
         .minute(values.time.minute())
         .toISOString();
 
-      const reservation: Reservation = {
-        id: `res-${Date.now()}`,
-        memberId: values.memberId || null,
+      const reservation: ReservationRequest = {
+        memberId: values.memberId || undefined,
         memberName,
-        memberPhone: values.memberPhone || null,
-        seatId: null,
+        memberPhone: values.memberPhone || undefined,
+        seatId: undefined,
         staffId: values.staffId,
         staffName: staffMember?.name || "",
         services: selectedServices,
         totalPrice,
         reservedAt,
         estimatedDuration: 30,
-        status: "scheduled",
-        createdAt: dayjs().toISOString(),
       };
 
-      onAdd(reservation);
+      await onAdd(reservation);
+      message.success("예약이 등록되었습니다");
       form.resetFields();
       setSelectedServices([]);
       setSelectedCategory("");
       onClose();
-    });
+    } catch (error) {
+      if (error instanceof Error) {
+        message.error(error.message);
+      }
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleCancel = () => {
@@ -146,6 +164,7 @@ export function NewReservationModal({
       onOk={handleSubmit}
       okText="예약 확정"
       cancelText="취소"
+      confirmLoading={submitting}
       width={600}
     >
       <Form form={form} layout="vertical">
@@ -252,7 +271,12 @@ export function NewReservationModal({
                     style={{ width: 200 }}
                     placeholder="길이 선택"
                     value={service.length}
-                    onChange={(value) => handleLengthChange(index, value)}
+                    onChange={(value) =>
+                      handleLengthChange(
+                        index,
+                        value as "short" | "medium" | "long",
+                      )
+                    }
                   >
                     <Select.Option value="short">숏</Select.Option>
                     <Select.Option value="medium">미듐</Select.Option>

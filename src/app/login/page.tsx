@@ -13,11 +13,11 @@ export default function LoginPage() {
   const { login } = useStore();
   const [loading, setLoading] = React.useState(false);
 
-  const onFinish = (values: { username: string; password: string }) => {
+  const onFinish = async (values: { username: string; password: string }) => {
     setLoading(true);
 
-    setTimeout(() => {
-      const success = login(values.username, values.password);
+    try {
+      const success = await login(values.username, values.password);
 
       if (success) {
         message.success("로그인 성공");
@@ -25,9 +25,11 @@ export default function LoginPage() {
       } else {
         message.error("아이디 또는 비밀번호가 올바르지 않습니다");
       }
-
+    } catch {
+      message.error("로그인 중 오류가 발생했습니다");
+    } finally {
       setLoading(false);
-    }, 500);
+    }
   };
 
   return (

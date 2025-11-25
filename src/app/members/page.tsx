@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Typography,
   Table,
@@ -15,6 +15,7 @@ import {
   Card,
   Tag,
   Progress,
+  Spin,
 } from "antd";
 import {
   PlusOutlined,
@@ -26,30 +27,62 @@ import {
 } from "@ant-design/icons";
 import { MainLayout } from "@/components/common/MainLayout";
 import { useStore } from "@/lib/store/useStore";
-import { Member } from "@/lib/types";
+import type { Member, LedgerEntry } from "@/lib/api/client";
 import dayjs from "dayjs";
 
 const { Title, Text } = Typography;
 
 export default function MembersPage() {
-  const { members, addMember, updateMember, deleteMember, ledger } = useStore();
+  const {
+    members,
+    fetchMembers,
+    addMember,
+    updateMember,
+    deleteMember,
+    ledger,
+    fetchLedger,
+  } = useStore();
   const [modalOpen, setModalOpen] = useState(false);
   const [editingMember, setEditingMember] = useState<Member | null>(null);
   const [searchText, setSearchText] = useState("");
   const [form] = Form.useForm();
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
 
-  const filteredMembers = members.filter((m) => {
-    return m.name.includes(searchText) || m.phone.includes(searchText);
-  });
+  // 초기 데이터 로드
+  useEffect(() => {
+    const loadData = async () => {
+      setLoading(true);
+      await Promise.all([
+        fetchMembers(),
+        fetchLedger({ startDate: "2020-01-01" }), // 전체 매출 기록 조회
+      ]);
+      setLoading(false);
+    };
+    loadData();
+  }, [fetchMembers, fetchLedger]);
+
+  // 검색 처리
+  useEffect(() => {
+    const delaySearch = setTimeout(() => {
+      fetchMembers(searchText || undefined);
+    }, 300);
+    return () => clearTimeout(delaySearch);
+  }, [searchText, fetchMembers]);
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat("ko-KR").format(price) + "원";
   };
 
   const getMemberStats = (memberId: string) => {
-    const memberLedger = ledger.filter((l) => l.memberId === memberId);
+    const memberLedger = ledger.filter(
+      (l: LedgerEntry) => l.memberId === memberId,
+    );
     const visitCount = memberLedger.length;
-    const totalSpent = memberLedger.reduce((sum, l) => sum + l.totalPrice, 0);
+    const totalSpent = memberLedger.reduce(
+      (sum: number, l: LedgerEntry) => sum + l.totalPrice,
+      0,
+    );
     const lastVisit =
       memberLedger.length > 0
         ? dayjs(memberLedger[memberLedger.length - 1].completedAt).format(
@@ -76,54 +109,60 @@ export default function MembersPage() {
     Modal.confirm({
       title: (
         <span style={{ fontSize: 20 }}>
-          <DeleteOutlined style={{ color: '#ff4d4f', marginRight: 10 }} />
+          <DeleteOutlined style={{ color: "#ff4d4f", marginRight: 10 }} />
           고객 삭제
         </span>
       ),
       content: (
-        <Text style={{ fontSize: 17 }}>
-          정말 이 고객을 삭제하시겠습니까?
-        </Text>
+        <Text style={{ fontSize: 17 }}>정말 이 고객을 삭제하시겠습니까?</Text>
       ),
       okText: "삭제",
       cancelText: "취소",
       okButtonProps: {
         danger: true,
-        size: 'large',
-        style: { height: 52, fontSize: 17 }
+        size: "large",
+        style: { height: 52, fontSize: 17 },
       },
       cancelButtonProps: {
-        size: 'large',
-        style: { height: 52, fontSize: 17 }
+        size: "large",
+        style: { height: 52, fontSize: 17 },
       },
       width: 420,
-      onOk: () => {
-        deleteMember(id);
-        message.success("고객이 삭제되었습니다");
+      onOk: async () => {
+        try {
+          await deleteMember(id);
+          message.success("고객이 삭제되었습니다");
+        } catch (error) {
+          message.error("고객 삭제에 실패했습니다");
+          console.error(error);
+        }
       },
     });
   };
 
-  const handleSubmit = () => {
-    form.validateFields().then((values) => {
+  const handleSubmit = async () => {
+    try {
+      const values = await form.validateFields();
+      setSubmitting(true);
+
       if (editingMember) {
-        updateMember(editingMember.id, values);
+        await updateMember(editingMember.id, values);
         message.success("고객 정보가 수정되었습니다");
       } else {
-        const newMember: Member = {
-          id: `member-${Date.now()}`,
-          ...values,
-          stamps: 0,
-          createdAt: dayjs().toISOString(),
-        };
-        addMember(newMember);
+        await addMember(values);
         message.success("고객이 등록되었습니다");
       }
 
       setModalOpen(false);
       form.resetFields();
       setEditingMember(null);
-    });
+    } catch (error) {
+      if (error instanceof Error) {
+        message.error(error.message);
+      }
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const columns = [
@@ -141,9 +180,7 @@ export default function MembersPage() {
       dataIndex: "phone",
       key: "phone",
       width: 140,
-      render: (phone: string) => (
-        <span style={{ fontSize: 16 }}>{phone}</span>
-      ),
+      render: (phone: string) => <span style={{ fontSize: 16 }}>{phone}</span>,
     },
     {
       title: "등록일",
@@ -151,7 +188,7 @@ export default function MembersPage() {
       key: "createdAt",
       width: 120,
       render: (date: string) => (
-        <span style={{ fontSize: 15, color: '#666' }}>
+        <span style={{ fontSize: 15, color: "#666" }}>
           {dayjs(date).format("YYYY-MM-DD")}
         </span>
       ),
@@ -171,7 +208,7 @@ export default function MembersPage() {
       key: "totalSpent",
       width: 140,
       render: (_: unknown, record: Member) => (
-        <span style={{ fontSize: 17, fontWeight: 600, color: '#1890ff' }}>
+        <span style={{ fontSize: 17, fontWeight: 600, color: "#1890ff" }}>
           {formatPrice(getMemberStats(record.id).totalSpent)}
         </span>
       ),
@@ -181,7 +218,7 @@ export default function MembersPage() {
       key: "lastVisit",
       width: 120,
       render: (_: unknown, record: Member) => (
-        <span style={{ fontSize: 15, color: '#666' }}>
+        <span style={{ fontSize: 15, color: "#666" }}>
           {getMemberStats(record.id).lastVisit}
         </span>
       ),
@@ -192,12 +229,12 @@ export default function MembersPage() {
       key: "stamps",
       width: 140,
       render: (stamps: number) => (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <Progress
             percent={(stamps || 0) * 10}
             size="small"
             showInfo={false}
-            strokeColor={stamps >= 10 ? '#52c41a' : '#1890ff'}
+            strokeColor={stamps >= 10 ? "#52c41a" : "#1890ff"}
             style={{ width: 60 }}
           />
           <span
@@ -210,7 +247,7 @@ export default function MembersPage() {
             {stamps || 0}/10
           </span>
           {stamps >= 10 && (
-            <TrophyOutlined style={{ color: '#faad14', fontSize: 18 }} />
+            <TrophyOutlined style={{ color: "#faad14", fontSize: 18 }} />
           )}
         </div>
       ),
@@ -241,17 +278,34 @@ export default function MembersPage() {
     },
   ];
 
+  if (loading) {
+    return (
+      <MainLayout>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            height: "60vh",
+          }}
+        >
+          <Spin size="large" />
+        </div>
+      </MainLayout>
+    );
+  }
+
   return (
     <MainLayout>
       {/* 헤더 */}
       <Row gutter={20} style={{ marginBottom: 24 }}>
         <Col flex="auto">
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <UserOutlined style={{ fontSize: 28, color: '#1890ff' }} />
+            <UserOutlined style={{ fontSize: 28, color: "#1890ff" }} />
             <Title level={3} style={{ margin: 0, fontSize: 26 }}>
               고객 관리
             </Title>
-            <Tag color="blue" style={{ fontSize: 15, padding: '6px 14px' }}>
+            <Tag color="blue" style={{ fontSize: 15, padding: "6px 14px" }}>
               총 {members.length}명
             </Tag>
           </div>
@@ -281,7 +335,7 @@ export default function MembersPage() {
       >
         <Input
           placeholder="이름/전화번호 검색"
-          prefix={<SearchOutlined style={{ fontSize: 18, color: '#999' }} />}
+          prefix={<SearchOutlined style={{ fontSize: 18, color: "#999" }} />}
           value={searchText}
           onChange={(e) => setSearchText(e.target.value)}
           size="large"
@@ -293,7 +347,7 @@ export default function MembersPage() {
       {/* 테이블 */}
       <Card style={{ borderRadius: 16 }} styles={{ body: { padding: 16 } }}>
         <Table
-          dataSource={filteredMembers}
+          dataSource={members}
           columns={columns}
           rowKey="id"
           pagination={{
@@ -304,9 +358,7 @@ export default function MembersPage() {
             emptyText: (
               <div className="empty-state">
                 <UserOutlined className="empty-state-icon" />
-                <div className="empty-state-text">
-                  등록된 고객이 없습니다
-                </div>
+                <div className="empty-state-text">등록된 고객이 없습니다</div>
                 <Button
                   type="primary"
                   icon={<PlusOutlined />}
@@ -316,7 +368,7 @@ export default function MembersPage() {
                   새 고객 등록하기
                 </Button>
               </div>
-            )
+            ),
           }}
           size="large"
         />
@@ -325,19 +377,19 @@ export default function MembersPage() {
       {/* 고객 등록/수정 모달 */}
       <Modal
         title={
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <div
               style={{
                 width: 40,
                 height: 40,
                 borderRadius: 10,
-                background: '#1890ff',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
+                background: "#1890ff",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
               }}
             >
-              <UserOutlined style={{ fontSize: 20, color: '#fff' }} />
+              <UserOutlined style={{ fontSize: 20, color: "#fff" }} />
             </div>
             <span style={{ fontSize: 20, fontWeight: 600 }}>
               {editingMember ? "고객 정보 수정" : "새 고객 등록"}
@@ -351,7 +403,7 @@ export default function MembersPage() {
           setEditingMember(null);
         }}
         footer={
-          <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
+          <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
             <Button
               size="large"
               onClick={() => {
@@ -359,7 +411,12 @@ export default function MembersPage() {
                 form.resetFields();
                 setEditingMember(null);
               }}
-              style={{ height: 52, paddingInline: 28, fontSize: 17, borderRadius: 12 }}
+              style={{
+                height: 52,
+                paddingInline: 28,
+                fontSize: 17,
+                borderRadius: 12,
+              }}
             >
               취소
             </Button>
@@ -367,7 +424,13 @@ export default function MembersPage() {
               type="primary"
               size="large"
               onClick={handleSubmit}
-              style={{ height: 52, paddingInline: 32, fontSize: 17, borderRadius: 12 }}
+              loading={submitting}
+              style={{
+                height: 52,
+                paddingInline: 32,
+                fontSize: 17,
+                borderRadius: 12,
+              }}
             >
               {editingMember ? "수정" : "등록"}
             </Button>
@@ -382,21 +445,17 @@ export default function MembersPage() {
             label={<span style={{ fontSize: 16, fontWeight: 500 }}>이름</span>}
             rules={[{ required: true, message: "이름을 입력해주세요" }]}
           >
-            <Input
-              placeholder="고객 이름"
-              size="large"
-            />
+            <Input placeholder="고객 이름" size="large" />
           </Form.Item>
 
           <Form.Item
             name="phone"
-            label={<span style={{ fontSize: 16, fontWeight: 500 }}>전화번호</span>}
+            label={
+              <span style={{ fontSize: 16, fontWeight: 500 }}>전화번호</span>
+            }
             rules={[{ required: true, message: "전화번호를 입력해주세요" }]}
           >
-            <Input
-              placeholder="010-0000-0000"
-              size="large"
-            />
+            <Input placeholder="010-0000-0000" size="large" />
           </Form.Item>
         </Form>
       </Modal>

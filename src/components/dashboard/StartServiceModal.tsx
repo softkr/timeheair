@@ -24,7 +24,7 @@ import {
 } from "@ant-design/icons";
 import { useStore } from "@/lib/store/useStore";
 import { serviceMenus, serviceCategories } from "@/lib/data/services";
-import { SelectedService } from "@/lib/types";
+import type { SelectedService } from "@/lib/api/client";
 
 const { Text, Title } = Typography;
 
@@ -480,26 +480,21 @@ export function StartServiceModal({
                     padding: "12px 16px",
                     background: "rgba(255,255,255,0.8)",
                     borderRadius: 10,
-                    marginBottom:
-                      index < selectedServices.length - 1 ? 8 : 0,
+                    marginBottom: index < selectedServices.length - 1 ? 8 : 0,
                   }}
                 >
                   <span style={{ fontSize: 16 }}>
                     {service.name}
                     {service.length && (
-                      <Tag
-                        color="blue"
-                        style={{ marginLeft: 8, fontSize: 13 }}
-                      >
+                      <Tag color="blue" style={{ marginLeft: 8, fontSize: 13 }}>
                         {service.length}
                       </Tag>
                     )}
                   </span>
-                  <span style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                    <Text
-                      strong
-                      style={{ fontSize: 17, color: "#1890ff" }}
-                    >
+                  <span
+                    style={{ display: "flex", alignItems: "center", gap: 12 }}
+                  >
+                    <Text strong style={{ fontSize: 17, color: "#1890ff" }}>
                       {formatPrice(service.price)}
                     </Text>
                     <Button

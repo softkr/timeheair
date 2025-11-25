@@ -8,7 +8,7 @@ import {
   ScissorOutlined,
   CheckCircleOutlined,
 } from "@ant-design/icons";
-import { Seat } from "@/lib/types";
+import type { Seat } from "@/lib/api/client";
 import dayjs from "dayjs";
 
 const { Text, Title } = Typography;
@@ -229,35 +229,45 @@ export function SeatCard({
             </div>
 
             {/* 서비스 목록 */}
-            <div
-              style={{
-                marginBottom: 12,
-                padding: "10px 12px",
-                background: "#f5f5f5",
-                borderRadius: 10,
-              }}
-            >
-              {seat.currentSession.services.map((service, index) => (
+            {seat.currentSession.services &&
+              seat.currentSession.services.length > 0 && (
                 <div
-                  key={index}
                   style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    marginBottom: index < seat.currentSession!.services.length - 1 ? 6 : 0,
+                    marginBottom: 12,
+                    padding: "10px 12px",
+                    background: "#f5f5f5",
+                    borderRadius: 10,
                   }}
                 >
-                  <Text style={{ fontSize: 16, color: "#666" }}>
-                    {service.name}
-                    {service.length && (
-                      <span style={{ color: "#999" }}> ({service.length})</span>
-                    )}
-                  </Text>
-                  <Text style={{ fontSize: 16, color: "#333" }}>
-                    {formatPrice(service.price)}
-                  </Text>
+                  {seat.currentSession.services.map((service, index) => (
+                    <div
+                      key={index}
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        marginBottom:
+                          index <
+                          (seat.currentSession?.services?.length || 1) - 1
+                            ? 6
+                            : 0,
+                      }}
+                    >
+                      <Text style={{ fontSize: 16, color: "#666" }}>
+                        {service.name}
+                        {service.length && (
+                          <span style={{ color: "#999" }}>
+                            {" "}
+                            ({service.length})
+                          </span>
+                        )}
+                      </Text>
+                      <Text style={{ fontSize: 16, color: "#333" }}>
+                        {formatPrice(service.price)}
+                      </Text>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
+              )}
 
             {/* 총 금액 */}
             <div
@@ -294,7 +304,9 @@ export function SeatCard({
               </Text>
               <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 <ClockCircleOutlined style={{ color: "#ff4d4f" }} />
-                <Text style={{ fontSize: 15, color: "#ff4d4f", fontWeight: 600 }}>
+                <Text
+                  style={{ fontSize: 15, color: "#ff4d4f", fontWeight: 600 }}
+                >
                   {formatElapsedTime(elapsedMinutes)}
                 </Text>
               </div>

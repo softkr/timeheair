@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Row,
   Col,
@@ -11,6 +11,7 @@ import {
   Modal,
   Card,
   Button,
+  Spin,
 } from "antd";
 import {
   CheckCircleOutlined,
@@ -21,7 +22,7 @@ import { MainLayout } from "@/components/common/MainLayout";
 import { SeatCard } from "@/components/dashboard/SeatCard";
 import { StartServiceModal } from "@/components/dashboard/StartServiceModal";
 import { useStore } from "@/lib/store/useStore";
-import { SelectedService } from "@/lib/types";
+import type { SelectedService } from "@/lib/api/client";
 import dayjs from "dayjs";
 
 const { Title, Text } = Typography;
@@ -29,14 +30,28 @@ const { Title, Text } = Typography;
 export default function DashboardPage() {
   const {
     seats,
-    updateSeat,
+    fetchSeats,
     reservations,
-    addLedgerEntry,
+    fetchReservations,
     staff,
+    fetchStaff,
+    startService,
+    completeService,
     addStamp,
   } = useStore();
   const [startModalOpen, setStartModalOpen] = useState(false);
   const [selectedSeatId, setSelectedSeatId] = useState<number | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  // 초기 데이터 로드
+  useEffect(() => {
+    const loadData = async () => {
+      setLoading(true);
+      await Promise.all([fetchSeats(), fetchReservations(), fetchStaff()]);
+      setLoading(false);
+    };
+    loadData();
+  }, [fetchSeats, fetchReservations, fetchStaff]);
 
   // 좌석 상태 통계
   const availableCount = seats.filter((s) => s.status === "available").length;
@@ -47,7 +62,7 @@ export default function DashboardPage() {
     setStartModalOpen(true);
   };
 
-  const handleStartService = (
+  const handleStartService = async (
     seatId: number,
     data: {
       memberId?: string | null;
@@ -55,25 +70,27 @@ export default function DashboardPage() {
       staffId: string;
       services: SelectedService[];
       totalPrice: number;
+      reservationId?: string | null;
     },
   ) => {
-    const staffMember = staff.find((s) => s.id === data.staffId);
+    try {
+      const staffMember = staff.find((s) => s.id === data.staffId);
 
-    updateSeat(seatId, {
-      status: "in_use",
-      currentSession: {
-        id: `session-${Date.now()}`,
-        memberId: data.memberId,
+      await startService(seatId, {
+        memberId: data.memberId || undefined,
         memberName: data.memberName,
         services: data.services,
         totalPrice: data.totalPrice,
         staffId: data.staffId,
         staffName: staffMember?.name || "",
-        startTime: dayjs().toISOString(),
-      },
-    });
+        reservationId: data.reservationId || undefined,
+      });
 
-    message.success("시술이 시작되었습니다");
+      message.success("시술이 시작되었습니다");
+    } catch (error) {
+      message.error("시술 시작에 실패했습니다");
+      console.error(error);
+    }
   };
 
   const handleClickComplete = (seatId: number) => {
@@ -83,9 +100,7 @@ export default function DashboardPage() {
     Modal.confirm({
       title: (
         <span style={{ fontSize: 20 }}>
-          <CheckCircleOutlined
-            style={{ color: "#52c41a", marginRight: 10 }}
-          />
+          <CheckCircleOutlined style={{ color: "#52c41a", marginRight: 10 }} />
           시술 완료
         </span>
       ),
@@ -129,35 +144,26 @@ export default function DashboardPage() {
         style: { height: 52, fontSize: 17 },
       },
       width: 480,
-      onOk: () => {
-        addLedgerEntry({
-          id: `ledger-${Date.now()}`,
-          memberId: seat.currentSession?.memberId,
-          memberName: seat.currentSession?.memberName || "",
-          seatId: seatId,
-          staffId: seat.currentSession?.staffId || "",
-          staffName: seat.currentSession?.staffName || "",
-          services: seat.currentSession?.services || [],
-          totalPrice: seat.currentSession?.totalPrice || 0,
-          completedAt: dayjs().toISOString(),
-        });
+      onOk: async () => {
+        try {
+          const session = seat.currentSession;
+          await completeService(seatId);
 
-        // 멤버십 고객이면 스탬프 추가
-        if (seat.currentSession?.memberId) {
-          const newStamps = addStamp(seat.currentSession.memberId);
-          if (newStamps >= 10) {
-            message.info(`스탬프 ${newStamps}개! 혜택 사용 가능`);
-          } else {
-            message.info(`스탬프 ${newStamps}/10`);
+          // 멤버십 고객이면 스탬프 추가
+          if (session?.memberId) {
+            const newStamps = await addStamp(session.memberId);
+            if (newStamps >= 10) {
+              message.info(`스탬프 ${newStamps}개! 혜택 사용 가능`);
+            } else {
+              message.info(`스탬프 ${newStamps}/10`);
+            }
           }
+
+          message.success("시술이 완료되었습니다");
+        } catch (error) {
+          message.error("시술 완료에 실패했습니다");
+          console.error(error);
         }
-
-        updateSeat(seatId, {
-          status: "available",
-          currentSession: undefined,
-        });
-
-        message.success("시술이 완료되었습니다");
       },
     });
   };
@@ -204,9 +210,7 @@ export default function DashboardPage() {
       dataIndex: "staffName",
       key: "staff",
       width: 100,
-      render: (name: string) => (
-        <span style={{ fontSize: 16 }}>{name}</span>
-      ),
+      render: (name: string) => <span style={{ fontSize: 16 }}>{name}</span>,
     },
     {
       title: "상태",
@@ -231,6 +235,23 @@ export default function DashboardPage() {
       },
     },
   ];
+
+  if (loading) {
+    return (
+      <MainLayout>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            height: "60vh",
+          }}
+        >
+          <Spin size="large" />
+        </div>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout>
@@ -311,13 +332,11 @@ export default function DashboardPage() {
             emptyText: (
               <div className="empty-state">
                 <CalendarOutlined className="empty-state-icon" />
-                <div className="empty-state-text">
-                  오늘 예약이 없습니다
-                </div>
+                <div className="empty-state-text">오늘 예약이 없습니다</div>
                 <Button
                   type="primary"
                   icon={<CalendarOutlined />}
-                  onClick={() => window.location.href = '/reservations'}
+                  onClick={() => (window.location.href = "/reservations")}
                   style={{ borderRadius: 10 }}
                 >
                   새 예약 만들기

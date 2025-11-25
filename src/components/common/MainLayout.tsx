@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Layout, Menu, Typography, Button, Badge, Modal } from "antd";
+import { Layout, Menu, Typography, Button, Badge, Modal, Spin } from "antd";
 import {
   DashboardOutlined,
   CalendarOutlined,
@@ -17,7 +17,7 @@ import "dayjs/locale/ko";
 
 dayjs.locale("ko");
 
-const { Header, Sider, Content, Footer } = Layout;
+const { Header, Sider, Content } = Layout;
 const { Title, Text } = Typography;
 
 interface MainLayoutProps {
@@ -27,8 +27,9 @@ interface MainLayoutProps {
 export function MainLayout({ children }: MainLayoutProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const { auth, logout, seats } = useStore();
+  const { auth, logout, checkAuth, seats } = useStore();
   const [currentTime, setCurrentTime] = useState(dayjs());
+  const [authChecking, setAuthChecking] = useState(true);
 
   // 사용 중인 좌석 수
   const inUseCount = seats.filter((s) => s.status === "in_use").length;
@@ -40,11 +41,37 @@ export function MainLayout({ children }: MainLayoutProps) {
     return () => clearInterval(timer);
   }, []);
 
+  // 인증 상태 확인
   useEffect(() => {
-    if (!auth.isLoggedIn && pathname !== "/login") {
-      router.push("/login");
-    }
-  }, [auth.isLoggedIn, pathname, router]);
+    const verifyAuth = async () => {
+      if (pathname === "/login") {
+        setAuthChecking(false);
+        return;
+      }
+
+      const isValid = await checkAuth();
+      if (!isValid) {
+        router.push("/login");
+      }
+      setAuthChecking(false);
+    };
+    verifyAuth();
+  }, [pathname, checkAuth, router]);
+
+  if (authChecking) {
+    return (
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "100vh",
+        }}
+      >
+        <Spin size="large" />
+      </div>
+    );
+  }
 
   if (!auth.isLoggedIn) {
     return null;
@@ -100,9 +127,7 @@ export function MainLayout({ children }: MainLayoutProps) {
         </span>
       ),
       content: (
-        <span style={{ fontSize: 17 }}>
-          정말 로그아웃 하시겠습니까?
-        </span>
+        <span style={{ fontSize: 17 }}>정말 로그아웃 하시겠습니까?</span>
       ),
       okText: "로그아웃",
       cancelText: "취소",
@@ -272,9 +297,7 @@ export function MainLayout({ children }: MainLayoutProps) {
               borderRadius: 10,
             }}
           >
-            <ClockCircleOutlined
-              style={{ fontSize: 20, color: "#1890ff" }}
-            />
+            <ClockCircleOutlined style={{ fontSize: 20, color: "#1890ff" }} />
             <Text
               style={{
                 fontSize: 18,

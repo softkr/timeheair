@@ -1,29 +1,76 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import { Typography, Table, Button, Tag, DatePicker, Input, Space, Modal, message, Row, Col, Card } from 'antd';
-import { PlusOutlined, SearchOutlined, CalendarOutlined, PlayCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
-import { MainLayout } from '@/components/common/MainLayout';
-import { NewReservationModal } from '@/components/reservations/NewReservationModal';
-import { useStore } from '@/lib/store/useStore';
-import { SelectedService, Reservation } from '@/lib/types';
-import dayjs from 'dayjs';
+import React, { useState, useEffect } from "react";
+import {
+  Typography,
+  Table,
+  Button,
+  Tag,
+  DatePicker,
+  Input,
+  Space,
+  Modal,
+  message,
+  Row,
+  Col,
+  Card,
+  Spin,
+} from "antd";
+import {
+  PlusOutlined,
+  SearchOutlined,
+  CalendarOutlined,
+  PlayCircleOutlined,
+  CloseCircleOutlined,
+} from "@ant-design/icons";
+import { MainLayout } from "@/components/common/MainLayout";
+import { NewReservationModal } from "@/components/reservations/NewReservationModal";
+import { useStore } from "@/lib/store/useStore";
+import type { SelectedService, Reservation } from "@/lib/api/client";
+import dayjs from "dayjs";
 
 const { Title, Text } = Typography;
 
 export default function ReservationsPage() {
-  const { reservations, addReservation, updateReservation, deleteReservation, seats, updateSeat, staff } = useStore();
+  const {
+    reservations,
+    fetchReservations,
+    addReservation,
+    updateReservationStatus,
+    deleteReservation,
+    seats,
+    fetchSeats,
+    startService,
+    staff,
+    fetchStaff,
+  } = useStore();
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState(dayjs());
-  const [searchText, setSearchText] = useState('');
+  const [searchText, setSearchText] = useState("");
+  const [loading, setLoading] = useState(true);
+
+  // 초기 데이터 로드
+  useEffect(() => {
+    const loadData = async () => {
+      setLoading(true);
+      await Promise.all([
+        fetchReservations({ all: true }),
+        fetchSeats(),
+        fetchStaff(),
+      ]);
+      setLoading(false);
+    };
+    loadData();
+  }, [fetchReservations, fetchSeats, fetchStaff]);
 
   const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('ko-KR').format(price) + '원';
+    return new Intl.NumberFormat("ko-KR").format(price) + "원";
   };
 
-  const filteredReservations = reservations.filter(r => {
-    const matchDate = dayjs(r.reservedAt).isSame(selectedDate, 'day');
-    const matchSearch = !searchText ||
+  const filteredReservations = reservations.filter((r) => {
+    const matchDate = dayjs(r.reservedAt).isSame(selectedDate, "day");
+    const matchSearch =
+      !searchText ||
       r.memberName.includes(searchText) ||
       r.memberPhone?.includes(searchText);
     return matchDate && matchSearch;
@@ -31,61 +78,57 @@ export default function ReservationsPage() {
 
   const handleStartReservation = (reservation: Reservation) => {
     // 빈 좌석 찾기
-    const availableSeats = seats.filter(s => s.status === 'available');
+    const availableSeats = seats.filter((s) => s.status === "available");
 
     if (availableSeats.length === 0) {
-      message.error('빈 좌석이 없습니다');
+      message.error("빈 좌석이 없습니다");
       return;
     }
 
     Modal.confirm({
       title: (
         <span style={{ fontSize: 20 }}>
-          <PlayCircleOutlined style={{ color: '#1890ff', marginRight: 10 }} />
+          <PlayCircleOutlined style={{ color: "#1890ff", marginRight: 10 }} />
           좌석 선택
         </span>
       ),
       content: (
-        <div style={{ padding: '16px 0' }}>
-          <Text style={{ fontSize: 16, marginBottom: 16, display: 'block' }}>
+        <div style={{ padding: "16px 0" }}>
+          <Text style={{ fontSize: 16, marginBottom: 16, display: "block" }}>
             시술을 시작할 좌석을 선택하세요:
           </Text>
           <Row gutter={[12, 12]}>
-            {availableSeats.map(seat => (
+            {availableSeats.map((seat) => (
               <Col key={seat.id} span={8}>
                 <Button
                   size="large"
                   style={{
-                    width: '100%',
+                    width: "100%",
                     height: 60,
                     fontSize: 17,
                     borderRadius: 12,
-                    background: '#f6ffed',
-                    borderColor: '#b7eb8f',
+                    background: "#f6ffed",
+                    borderColor: "#b7eb8f",
                   }}
-                  onClick={() => {
-                    updateSeat(seat.id, {
-                      status: 'in_use',
-                      currentSession: {
-                        id: `session-${Date.now()}`,
-                        memberId: reservation.memberId,
+                  onClick={async () => {
+                    try {
+                      await startService(seat.id, {
+                        memberId: reservation.memberId || undefined,
                         memberName: reservation.memberName,
                         services: reservation.services,
                         totalPrice: reservation.totalPrice,
                         staffId: reservation.staffId,
                         staffName: reservation.staffName,
-                        startTime: dayjs().toISOString(),
                         reservationId: reservation.id,
-                      },
-                    });
+                      });
 
-                    updateReservation(reservation.id, {
-                      status: 'in_progress',
-                      seatId: seat.id,
-                    });
-
-                    message.success(`${seat.name}에서 시술이 시작되었습니다`);
-                    Modal.destroyAll();
+                      message.success(`${seat.name}에서 시술이 시작되었습니다`);
+                      Modal.destroyAll();
+                      await fetchReservations({ all: true });
+                    } catch (error) {
+                      message.error("시술 시작에 실패했습니다");
+                      console.error(error);
+                    }
                   }}
                 >
                   {seat.name}
@@ -104,104 +147,105 @@ export default function ReservationsPage() {
     Modal.confirm({
       title: (
         <span style={{ fontSize: 20 }}>
-          <CloseCircleOutlined style={{ color: '#ff4d4f', marginRight: 10 }} />
+          <CloseCircleOutlined style={{ color: "#ff4d4f", marginRight: 10 }} />
           예약 취소
         </span>
       ),
       content: (
-        <Text style={{ fontSize: 17 }}>
-          정말 예약을 취소하시겠습니까?
-        </Text>
+        <Text style={{ fontSize: 17 }}>정말 예약을 취소하시겠습니까?</Text>
       ),
-      okText: '취소하기',
-      cancelText: '닫기',
+      okText: "취소하기",
+      cancelText: "닫기",
       okButtonProps: {
         danger: true,
-        size: 'large',
-        style: { height: 52, fontSize: 17 }
+        size: "large",
+        style: { height: 52, fontSize: 17 },
       },
       cancelButtonProps: {
-        size: 'large',
-        style: { height: 52, fontSize: 17 }
+        size: "large",
+        style: { height: 52, fontSize: 17 },
       },
       width: 420,
-      onOk: () => {
-        updateReservation(id, { status: 'cancelled' });
-        message.success('예약이 취소되었습니다');
+      onOk: async () => {
+        try {
+          await updateReservationStatus(id, "cancelled");
+          message.success("예약이 취소되었습니다");
+        } catch (error) {
+          message.error("예약 취소에 실패했습니다");
+          console.error(error);
+        }
       },
     });
   };
 
   const columns = [
     {
-      title: '시간',
-      dataIndex: 'reservedAt',
-      key: 'time',
+      title: "시간",
+      dataIndex: "reservedAt",
+      key: "time",
       width: 100,
       render: (date: string) => (
-        <span style={{ fontSize: 18, fontWeight: 600, color: '#333' }}>
-          {dayjs(date).format('HH:mm')}
+        <span style={{ fontSize: 18, fontWeight: 600, color: "#333" }}>
+          {dayjs(date).format("HH:mm")}
         </span>
       ),
       sorter: (a: Reservation, b: Reservation) =>
         dayjs(a.reservedAt).unix() - dayjs(b.reservedAt).unix(),
     },
     {
-      title: '고객',
-      dataIndex: 'memberName',
-      key: 'member',
+      title: "고객",
+      dataIndex: "memberName",
+      key: "member",
       width: 120,
       render: (name: string) => (
         <span style={{ fontSize: 17, fontWeight: 500 }}>{name}</span>
       ),
     },
     {
-      title: '서비스',
-      dataIndex: 'services',
-      key: 'services',
+      title: "서비스",
+      dataIndex: "services",
+      key: "services",
       render: (services: SelectedService[]) => (
-        <span style={{ fontSize: 16, color: '#666' }}>
-          {services.map(s => s.name).join(', ')}
+        <span style={{ fontSize: 16, color: "#666" }}>
+          {services.map((s) => s.name).join(", ")}
         </span>
       ),
     },
     {
-      title: '금액',
-      dataIndex: 'totalPrice',
-      key: 'price',
+      title: "금액",
+      dataIndex: "totalPrice",
+      key: "price",
       width: 120,
       render: (price: number) => (
-        <span style={{ fontSize: 17, fontWeight: 600, color: '#1890ff' }}>
+        <span style={{ fontSize: 17, fontWeight: 600, color: "#1890ff" }}>
           {formatPrice(price)}
         </span>
       ),
     },
     {
-      title: '담당',
-      dataIndex: 'staffName',
-      key: 'staff',
+      title: "담당",
+      dataIndex: "staffName",
+      key: "staff",
       width: 100,
-      render: (name: string) => (
-        <span style={{ fontSize: 16 }}>{name}</span>
-      ),
+      render: (name: string) => <span style={{ fontSize: 16 }}>{name}</span>,
     },
     {
-      title: '상태',
-      dataIndex: 'status',
-      key: 'status',
+      title: "상태",
+      dataIndex: "status",
+      key: "status",
       width: 100,
       render: (status: string) => {
         const statusMap: Record<string, { color: string; text: string }> = {
-          scheduled: { color: 'blue', text: '대기' },
-          in_progress: { color: 'red', text: '진행중' },
-          completed: { color: 'green', text: '완료' },
-          cancelled: { color: 'default', text: '취소' },
+          scheduled: { color: "blue", text: "대기" },
+          in_progress: { color: "red", text: "진행중" },
+          completed: { color: "green", text: "완료" },
+          cancelled: { color: "default", text: "취소" },
         };
-        const config = statusMap[status] || { color: 'default', text: status };
+        const config = statusMap[status] || { color: "default", text: status };
         return (
           <Tag
             color={config.color}
-            style={{ fontSize: 15, padding: '6px 14px', fontWeight: 500 }}
+            style={{ fontSize: 15, padding: "6px 14px", fontWeight: 500 }}
           >
             {config.text}
           </Tag>
@@ -209,12 +253,12 @@ export default function ReservationsPage() {
       },
     },
     {
-      title: '액션',
-      key: 'action',
+      title: "액션",
+      key: "action",
       width: 180,
       render: (_: unknown, record: Reservation) => (
         <Space size={8}>
-          {record.status === 'scheduled' && (
+          {record.status === "scheduled" && (
             <>
               <Button
                 type="primary"
@@ -248,15 +292,34 @@ export default function ReservationsPage() {
     },
   ];
 
+  if (loading) {
+    return (
+      <MainLayout>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            height: "60vh",
+          }}
+        >
+          <Spin size="large" />
+        </div>
+      </MainLayout>
+    );
+  }
+
   return (
     <MainLayout>
       {/* 헤더 */}
       <Row gutter={20} style={{ marginBottom: 24 }}>
         <Col flex="auto">
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <CalendarOutlined style={{ fontSize: 28, color: '#1890ff' }} />
-            <Title level={3} style={{ margin: 0, fontSize: 26 }}>예약 관리</Title>
-            <Tag color="blue" style={{ fontSize: 15, padding: '6px 14px' }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <CalendarOutlined style={{ fontSize: 28, color: "#1890ff" }} />
+            <Title level={3} style={{ margin: 0, fontSize: 26 }}>
+              예약 관리
+            </Title>
+            <Tag color="blue" style={{ fontSize: 15, padding: "6px 14px" }}>
               {filteredReservations.length}건
             </Tag>
           </div>
@@ -297,7 +360,9 @@ export default function ReservationsPage() {
           <Col flex="auto">
             <Input
               placeholder="고객명/전화번호 검색"
-              prefix={<SearchOutlined style={{ fontSize: 18, color: '#999' }} />}
+              prefix={
+                <SearchOutlined style={{ fontSize: 18, color: "#999" }} />
+              }
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
               size="large"
@@ -306,8 +371,8 @@ export default function ReservationsPage() {
             />
           </Col>
           <Col>
-            <Text style={{ fontSize: 15, color: '#666' }}>
-              {selectedDate.format('YYYY년 MM월 DD일 (ddd)')}
+            <Text style={{ fontSize: 15, color: "#666" }}>
+              {selectedDate.format("YYYY년 MM월 DD일 (ddd)")}
             </Text>
           </Col>
         </Row>
@@ -339,7 +404,7 @@ export default function ReservationsPage() {
                   새 예약 만들기
                 </Button>
               </div>
-            )
+            ),
           }}
           size="large"
         />
