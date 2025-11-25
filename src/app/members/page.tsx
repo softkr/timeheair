@@ -10,12 +10,19 @@ import {
   Modal,
   Form,
   message,
+  Row,
+  Col,
+  Card,
+  Tag,
+  Progress,
 } from "antd";
 import {
   PlusOutlined,
   SearchOutlined,
   EditOutlined,
   DeleteOutlined,
+  UserOutlined,
+  TrophyOutlined,
 } from "@ant-design/icons";
 import { MainLayout } from "@/components/common/MainLayout";
 import { useStore } from "@/lib/store/useStore";
@@ -67,11 +74,29 @@ export default function MembersPage() {
 
   const handleDelete = (id: string) => {
     Modal.confirm({
-      title: "고객 삭제",
-      content: "정말 이 고객을 삭제하시겠습니까?",
+      title: (
+        <span style={{ fontSize: 20 }}>
+          <DeleteOutlined style={{ color: '#ff4d4f', marginRight: 10 }} />
+          고객 삭제
+        </span>
+      ),
+      content: (
+        <Text style={{ fontSize: 17 }}>
+          정말 이 고객을 삭제하시겠습니까?
+        </Text>
+      ),
       okText: "삭제",
       cancelText: "취소",
-      okButtonProps: { danger: true },
+      okButtonProps: {
+        danger: true,
+        size: 'large',
+        style: { height: 52, fontSize: 17 }
+      },
+      cancelButtonProps: {
+        size: 'large',
+        style: { height: 52, fontSize: 17 }
+      },
+      width: 420,
       onOk: () => {
         deleteMember(id);
         message.success("고객이 삭제되었습니다");
@@ -106,66 +131,110 @@ export default function MembersPage() {
       title: "이름",
       dataIndex: "name",
       key: "name",
+      width: 120,
+      render: (name: string) => (
+        <span style={{ fontSize: 17, fontWeight: 500 }}>{name}</span>
+      ),
     },
     {
       title: "전화번호",
       dataIndex: "phone",
       key: "phone",
+      width: 140,
+      render: (phone: string) => (
+        <span style={{ fontSize: 16 }}>{phone}</span>
+      ),
     },
     {
       title: "등록일",
       dataIndex: "createdAt",
       key: "createdAt",
-      render: (date: string) => dayjs(date).format("YYYY-MM-DD"),
+      width: 120,
+      render: (date: string) => (
+        <span style={{ fontSize: 15, color: '#666' }}>
+          {dayjs(date).format("YYYY-MM-DD")}
+        </span>
+      ),
     },
     {
       title: "방문 횟수",
       key: "visitCount",
-      render: (_: unknown, record: Member) =>
-        getMemberStats(record.id).visitCount + "회",
+      width: 100,
+      render: (_: unknown, record: Member) => (
+        <span style={{ fontSize: 16, fontWeight: 500 }}>
+          {getMemberStats(record.id).visitCount}회
+        </span>
+      ),
     },
     {
       title: "총 결제액",
       key: "totalSpent",
-      render: (_: unknown, record: Member) =>
-        formatPrice(getMemberStats(record.id).totalSpent),
+      width: 140,
+      render: (_: unknown, record: Member) => (
+        <span style={{ fontSize: 17, fontWeight: 600, color: '#1890ff' }}>
+          {formatPrice(getMemberStats(record.id).totalSpent)}
+        </span>
+      ),
     },
     {
       title: "최근 방문",
       key: "lastVisit",
-      render: (_: unknown, record: Member) =>
-        getMemberStats(record.id).lastVisit,
+      width: 120,
+      render: (_: unknown, record: Member) => (
+        <span style={{ fontSize: 15, color: '#666' }}>
+          {getMemberStats(record.id).lastVisit}
+        </span>
+      ),
     },
     {
       title: "스탬프",
       dataIndex: "stamps",
       key: "stamps",
+      width: 140,
       render: (stamps: number) => (
-        <span
-          style={{
-            fontWeight: stamps >= 10 ? 600 : 400,
-            color: stamps >= 10 ? "#52c41a" : undefined,
-          }}
-        >
-          {stamps || 0}/10
-        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <Progress
+            percent={(stamps || 0) * 10}
+            size="small"
+            showInfo={false}
+            strokeColor={stamps >= 10 ? '#52c41a' : '#1890ff'}
+            style={{ width: 60 }}
+          />
+          <span
+            style={{
+              fontSize: 16,
+              fontWeight: stamps >= 10 ? 600 : 400,
+              color: stamps >= 10 ? "#52c41a" : "#333",
+            }}
+          >
+            {stamps || 0}/10
+          </span>
+          {stamps >= 10 && (
+            <TrophyOutlined style={{ color: '#faad14', fontSize: 18 }} />
+          )}
+        </div>
       ),
     },
     {
       title: "액션",
       key: "action",
+      width: 120,
       render: (_: unknown, record: Member) => (
-        <Space>
+        <Space size={8}>
           <Button
             type="text"
-            icon={<EditOutlined />}
+            size="large"
+            icon={<EditOutlined style={{ fontSize: 18 }} />}
             onClick={() => handleEdit(record)}
+            style={{ width: 44, height: 44, borderRadius: 10 }}
           />
           <Button
             type="text"
             danger
-            icon={<DeleteOutlined />}
+            size="large"
+            icon={<DeleteOutlined style={{ fontSize: 18 }} />}
             onClick={() => handleDelete(record.id)}
+            style={{ width: 44, height: 44, borderRadius: 10 }}
           />
         </Space>
       ),
@@ -174,71 +243,153 @@ export default function MembersPage() {
 
   return (
     <MainLayout>
-      <div
-        style={{
-          marginBottom: 24,
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-        }}
-      >
-        <Title level={4} style={{ margin: 0 }}>
-          고객 관리
-        </Title>
-        <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
-          새 고객
-        </Button>
-      </div>
+      {/* 헤더 */}
+      <Row gutter={20} style={{ marginBottom: 24 }}>
+        <Col flex="auto">
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <UserOutlined style={{ fontSize: 28, color: '#1890ff' }} />
+            <Title level={3} style={{ margin: 0, fontSize: 26 }}>
+              고객 관리
+            </Title>
+            <Tag color="blue" style={{ fontSize: 15, padding: '6px 14px' }}>
+              총 {members.length}명
+            </Tag>
+          </div>
+        </Col>
+        <Col>
+          <Button
+            type="primary"
+            icon={<PlusOutlined style={{ fontSize: 18 }} />}
+            onClick={handleAdd}
+            size="large"
+            style={{
+              height: 52,
+              paddingInline: 28,
+              fontSize: 17,
+              borderRadius: 12,
+            }}
+          >
+            새 고객
+          </Button>
+        </Col>
+      </Row>
 
-      <div style={{ marginBottom: 16 }}>
+      {/* 검색 */}
+      <Card
+        style={{ marginBottom: 20, borderRadius: 16 }}
+        styles={{ body: { padding: 20 } }}
+      >
         <Input
           placeholder="이름/전화번호 검색"
-          prefix={<SearchOutlined />}
+          prefix={<SearchOutlined style={{ fontSize: 18, color: '#999' }} />}
           value={searchText}
           onChange={(e) => setSearchText(e.target.value)}
-          style={{ width: 300 }}
+          size="large"
+          style={{ maxWidth: 400 }}
+          allowClear
         />
-      </div>
+      </Card>
 
-      <Table
-        dataSource={filteredMembers}
-        columns={columns}
-        rowKey="id"
-        pagination={{ pageSize: 10 }}
-        locale={{ emptyText: "등록된 고객이 없습니다" }}
-      />
+      {/* 테이블 */}
+      <Card style={{ borderRadius: 16 }} styles={{ body: { padding: 16 } }}>
+        <Table
+          dataSource={filteredMembers}
+          columns={columns}
+          rowKey="id"
+          pagination={{
+            pageSize: 10,
+            showTotal: (total) => `총 ${total}명`,
+          }}
+          locale={{
+            emptyText: (
+              <div style={{ padding: '60px 0' }}>
+                <UserOutlined style={{ fontSize: 56, color: '#d9d9d9', marginBottom: 16 }} />
+                <br />
+                <Text type="secondary" style={{ fontSize: 17 }}>
+                  등록된 고객이 없습니다
+                </Text>
+              </div>
+            )
+          }}
+          size="large"
+        />
+      </Card>
 
-      <div style={{ marginTop: 16 }}>
-        <Text type="secondary">총 {members.length}명</Text>
-      </div>
-
+      {/* 고객 등록/수정 모달 */}
       <Modal
-        title={editingMember ? "고객 정보 수정" : "새 고객 등록"}
+        title={
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: 10,
+                background: '#1890ff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <UserOutlined style={{ fontSize: 20, color: '#fff' }} />
+            </div>
+            <span style={{ fontSize: 20, fontWeight: 600 }}>
+              {editingMember ? "고객 정보 수정" : "새 고객 등록"}
+            </span>
+          </div>
+        }
         open={modalOpen}
         onCancel={() => {
           setModalOpen(false);
           form.resetFields();
           setEditingMember(null);
         }}
-        onOk={handleSubmit}
-        okText={editingMember ? "수정" : "등록"}
-        cancelText="취소"
+        footer={
+          <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
+            <Button
+              size="large"
+              onClick={() => {
+                setModalOpen(false);
+                form.resetFields();
+                setEditingMember(null);
+              }}
+              style={{ height: 52, paddingInline: 28, fontSize: 17, borderRadius: 12 }}
+            >
+              취소
+            </Button>
+            <Button
+              type="primary"
+              size="large"
+              onClick={handleSubmit}
+              style={{ height: 52, paddingInline: 32, fontSize: 17, borderRadius: 12 }}
+            >
+              {editingMember ? "수정" : "등록"}
+            </Button>
+          </div>
+        }
+        width={500}
+        styles={{ body: { padding: 24 } }}
       >
-        <Form form={form} layout="vertical">
+        <Form form={form} layout="vertical" style={{ marginTop: 16 }}>
           <Form.Item
             name="name"
-            label="이름"
+            label={<span style={{ fontSize: 16, fontWeight: 500 }}>이름</span>}
             rules={[{ required: true, message: "이름을 입력해주세요" }]}
           >
-            <Input placeholder="고객 이름" />
+            <Input
+              placeholder="고객 이름"
+              size="large"
+            />
           </Form.Item>
 
           <Form.Item
             name="phone"
-            label="전화번호"
+            label={<span style={{ fontSize: 16, fontWeight: 500 }}>전화번호</span>}
             rules={[{ required: true, message: "전화번호를 입력해주세요" }]}
           >
-            <Input placeholder="010-0000-0000" />
+            <Input
+              placeholder="010-0000-0000"
+              size="large"
+            />
           </Form.Item>
         </Form>
       </Modal>

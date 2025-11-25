@@ -12,8 +12,16 @@ import {
   Row,
   Col,
   Card,
+  Tag,
+  Badge,
 } from "antd";
-import { PlusOutlined, DeleteOutlined, CheckOutlined } from "@ant-design/icons";
+import {
+  DeleteOutlined,
+  CheckOutlined,
+  UserOutlined,
+  TeamOutlined,
+  ShoppingCartOutlined,
+} from "@ant-design/icons";
 import { useStore } from "@/lib/store/useStore";
 import { serviceMenus, serviceCategories } from "@/lib/data/services";
 import { SelectedService } from "@/lib/types";
@@ -127,27 +135,61 @@ export function StartServiceModal({
     (m) => m.category === selectedCategory,
   );
 
+  // 선택된 멤버 정보
+  const selectedMember = selectedMemberId
+    ? members.find((m) => m.id === selectedMemberId)
+    : null;
+
   return (
     <Modal
       title={
-        <Title level={4} style={{ margin: 0 }}>
-          시술 시작
-        </Title>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <div
+            style={{
+              width: 44,
+              height: 44,
+              borderRadius: 12,
+              background: "#1890ff",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <ShoppingCartOutlined style={{ fontSize: 22, color: "#fff" }} />
+          </div>
+          <div>
+            <Title level={4} style={{ margin: 0, fontSize: 22 }}>
+              시술 시작
+            </Title>
+            <Text type="secondary" style={{ fontSize: 14 }}>
+              서비스와 담당자를 선택해주세요
+            </Text>
+          </div>
+        </div>
       }
       open={open}
       onCancel={handleCancel}
       footer={null}
-      width={800}
-      styles={{ body: { padding: "16px" } }}
+      width={900}
+      styles={{ body: { padding: "24px" } }}
     >
       <Form form={form} layout="vertical">
-        <Row gutter={12}>
+        {/* 고객 및 담당자 선택 */}
+        <Row gutter={20}>
           <Col span={12}>
-            <Form.Item label="고객 선택" style={{ marginBottom: 12 }}>
+            <Form.Item
+              label={
+                <span style={{ fontSize: 16, fontWeight: 500 }}>
+                  <UserOutlined style={{ marginRight: 8 }} />
+                  고객 선택
+                </span>
+              }
+              style={{ marginBottom: 16 }}
+            >
               <Select
-                placeholder="멤버 검색 또는 손님"
+                placeholder="멤버 검색 (미선택시 손님)"
                 size="large"
-                style={{ height: 48, width: "100%" }}
+                style={{ width: "100%" }}
                 allowClear
                 showSearch
                 optionFilterProp="children"
@@ -156,10 +198,45 @@ export function StartServiceModal({
               >
                 {members.map((m) => (
                   <Select.Option key={m.id} value={m.id}>
-                    {m.name} ({m.phone})
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                      }}
+                    >
+                      <span>
+                        {m.name} <Text type="secondary">({m.phone})</Text>
+                      </span>
+                      {(m.stamps || 0) >= 10 && (
+                        <Tag color="green" style={{ marginLeft: 8 }}>
+                          혜택가능
+                        </Tag>
+                      )}
+                    </div>
                   </Select.Option>
                 ))}
               </Select>
+              {selectedMember && (
+                <div
+                  style={{
+                    marginTop: 8,
+                    padding: "8px 12px",
+                    background: "#f0f5ff",
+                    borderRadius: 8,
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                  }}
+                >
+                  <Text style={{ fontSize: 14 }}>
+                    스탬프: <strong>{selectedMember.stamps || 0}/10</strong>
+                  </Text>
+                  {(selectedMember.stamps || 0) >= 10 && (
+                    <Tag color="green">혜택 적용 가능</Tag>
+                  )}
+                </div>
+              )}
             </Form.Item>
             <Form.Item name="memberName" hidden>
               <Input />
@@ -168,18 +245,19 @@ export function StartServiceModal({
           <Col span={12}>
             <Form.Item
               name="staffId"
-              label="담당"
-              rules={[{ required: true, message: "선택해주세요" }]}
-              style={{ marginBottom: 12 }}
+              label={
+                <span style={{ fontSize: 16, fontWeight: 500 }}>
+                  <TeamOutlined style={{ marginRight: 8 }} />
+                  담당자
+                </span>
+              }
+              rules={[{ required: true, message: "담당자를 선택해주세요" }]}
+              style={{ marginBottom: 16 }}
             >
-              <Select
-                placeholder="담당 선택"
-                size="large"
-                style={{ height: 48 }}
-              >
+              <Select placeholder="담당자 선택" size="large">
                 {staff.map((s) => (
                   <Select.Option key={s.id} value={s.id}>
-                    {s.name}
+                    <Text style={{ fontSize: 16 }}>{s.name}</Text>
                   </Select.Option>
                 ))}
               </Select>
@@ -187,11 +265,13 @@ export function StartServiceModal({
           </Col>
         </Row>
 
-        <Divider style={{ margin: "12px 0" }}>서비스 선택</Divider>
+        <Divider style={{ margin: "16px 0" }}>
+          <Text style={{ fontSize: 16, fontWeight: 500 }}>서비스 선택</Text>
+        </Divider>
 
         {/* 카테고리 탭 */}
-        <div style={{ marginBottom: 12 }}>
-          <Row gutter={[8, 8]}>
+        <div style={{ marginBottom: 16 }}>
+          <Row gutter={[12, 12]}>
             {serviceCategories.map((cat) => (
               <Col key={cat}>
                 <Button
@@ -199,8 +279,10 @@ export function StartServiceModal({
                   onClick={() => setSelectedCategory(cat)}
                   size="large"
                   style={{
-                    height: 44,
-                    borderRadius: 8,
+                    height: 52,
+                    paddingInline: 24,
+                    borderRadius: 12,
+                    fontSize: 16,
                     fontWeight: selectedCategory === cat ? 600 : 400,
                   }}
                 >
@@ -214,15 +296,15 @@ export function StartServiceModal({
         {/* 서비스 목록 */}
         <div
           style={{
-            maxHeight: 240,
+            maxHeight: 280,
             overflowY: "auto",
-            marginBottom: 12,
-            border: "1px solid #f0f0f0",
-            borderRadius: 8,
-            padding: 8,
+            marginBottom: 16,
+            background: "#fafafa",
+            borderRadius: 16,
+            padding: 16,
           }}
         >
-          <Row gutter={[8, 8]}>
+          <Row gutter={[12, 12]}>
             {filteredMenus.map((menu) => (
               <Col key={menu.id} span={12}>
                 {menu.price ? (
@@ -231,58 +313,109 @@ export function StartServiceModal({
                     size="large"
                     onClick={() => handleAddService(menu)}
                     style={{
-                      height: 52,
+                      height: 64,
                       textAlign: "left",
                       display: "flex",
                       justifyContent: "space-between",
                       alignItems: "center",
-                      borderRadius: 8,
+                      borderRadius: 12,
+                      padding: "0 20px",
+                      background: "#fff",
+                      border: "2px solid #e8e8e8",
                     }}
                   >
-                    <span>{menu.name}</span>
-                    <span style={{ color: "#1890ff" }}>
+                    <span style={{ fontSize: 17, fontWeight: 500 }}>
+                      {menu.name}
+                    </span>
+                    <span
+                      style={{
+                        color: "#1890ff",
+                        fontSize: 17,
+                        fontWeight: 600,
+                      }}
+                    >
                       {formatPrice(menu.price)}
                     </span>
                   </Button>
                 ) : (
                   <Card
                     size="small"
-                    style={{ borderRadius: 8 }}
-                    bodyStyle={{ padding: 8 }}
+                    style={{
+                      borderRadius: 12,
+                      border: "2px solid #e8e8e8",
+                    }}
+                    styles={{ body: { padding: 16 } }}
                   >
-                    <div style={{ fontWeight: 500, marginBottom: 8 }}>
+                    <div
+                      style={{
+                        fontWeight: 600,
+                        marginBottom: 12,
+                        fontSize: 17,
+                      }}
+                    >
                       {menu.name}
                     </div>
-                    <Row gutter={4}>
+                    <Row gutter={8}>
                       <Col span={8}>
                         <Button
                           block
-                          size="small"
                           onClick={() => handleAddService(menu, "short")}
+                          style={{
+                            height: 56,
+                            borderRadius: 10,
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            padding: 8,
+                          }}
                         >
-                          숏{" "}
-                          {menu.prices?.short && formatPrice(menu.prices.short)}
+                          <span style={{ fontWeight: 600 }}>숏</span>
+                          <span style={{ fontSize: 13, color: "#1890ff" }}>
+                            {menu.prices?.short &&
+                              formatPrice(menu.prices.short)}
+                          </span>
                         </Button>
                       </Col>
                       <Col span={8}>
                         <Button
                           block
-                          size="small"
                           onClick={() => handleAddService(menu, "medium")}
+                          style={{
+                            height: 56,
+                            borderRadius: 10,
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            padding: 8,
+                          }}
                         >
-                          미듐{" "}
-                          {menu.prices?.medium &&
-                            formatPrice(menu.prices.medium)}
+                          <span style={{ fontWeight: 600 }}>미듐</span>
+                          <span style={{ fontSize: 13, color: "#1890ff" }}>
+                            {menu.prices?.medium &&
+                              formatPrice(menu.prices.medium)}
+                          </span>
                         </Button>
                       </Col>
                       <Col span={8}>
                         <Button
                           block
-                          size="small"
                           onClick={() => handleAddService(menu, "long")}
+                          style={{
+                            height: 56,
+                            borderRadius: 10,
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            padding: 8,
+                          }}
                         >
-                          롱{" "}
-                          {menu.prices?.long && formatPrice(menu.prices.long)}
+                          <span style={{ fontWeight: 600 }}>롱</span>
+                          <span style={{ fontSize: 13, color: "#1890ff" }}>
+                            {menu.prices?.long && formatPrice(menu.prices.long)}
+                          </span>
                         </Button>
                       </Col>
                     </Row>
@@ -294,54 +427,98 @@ export function StartServiceModal({
         </div>
 
         {/* 선택된 서비스 */}
-        {selectedServices.length > 0 && (
+        <div
+          style={{
+            background:
+              selectedServices.length > 0
+                ? "linear-gradient(135deg, #e6f7ff 0%, #bae7ff 100%)"
+                : "#f5f5f5",
+            borderRadius: 16,
+            padding: 20,
+            marginBottom: 16,
+            minHeight: 120,
+            border: selectedServices.length > 0 ? "2px solid #91d5ff" : "none",
+          }}
+        >
           <div
             style={{
-              background: "#f5f5f5",
-              borderRadius: 8,
-              padding: 12,
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
               marginBottom: 12,
             }}
           >
-            <Text strong style={{ display: "block", marginBottom: 8 }}>
+            <Text strong style={{ fontSize: 16 }}>
+              <ShoppingCartOutlined style={{ marginRight: 8 }} />
               선택된 서비스
             </Text>
-            {selectedServices.map((service, index) => (
-              <div
-                key={index}
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  padding: "6px 0",
-                  borderBottom:
-                    index < selectedServices.length - 1
-                      ? "1px solid #e8e8e8"
-                      : "none",
-                }}
-              >
-                <span>
-                  {service.name}
-                  {service.length && (
-                    <Text type="secondary"> ({service.length})</Text>
-                  )}
-                </span>
-                <span>
-                  <Text strong style={{ marginRight: 12 }}>
-                    {formatPrice(service.price)}
-                  </Text>
-                  <Button
-                    type="text"
-                    danger
-                    size="small"
-                    icon={<DeleteOutlined />}
-                    onClick={() => handleRemoveService(index)}
-                  />
-                </span>
-              </div>
-            ))}
+            {selectedServices.length > 0 && (
+              <Badge
+                count={selectedServices.length}
+                style={{ backgroundColor: "#1890ff" }}
+              />
+            )}
           </div>
-        )}
+
+          {selectedServices.length === 0 ? (
+            <div
+              style={{ textAlign: "center", padding: "20px 0", color: "#999" }}
+            >
+              <Text type="secondary" style={{ fontSize: 16 }}>
+                위에서 서비스를 선택해주세요
+              </Text>
+            </div>
+          ) : (
+            <div style={{ maxHeight: 160, overflowY: "auto" }}>
+              {selectedServices.map((service, index) => (
+                <div
+                  key={index}
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    padding: "12px 16px",
+                    background: "rgba(255,255,255,0.8)",
+                    borderRadius: 10,
+                    marginBottom:
+                      index < selectedServices.length - 1 ? 8 : 0,
+                  }}
+                >
+                  <span style={{ fontSize: 16 }}>
+                    {service.name}
+                    {service.length && (
+                      <Tag
+                        color="blue"
+                        style={{ marginLeft: 8, fontSize: 13 }}
+                      >
+                        {service.length}
+                      </Tag>
+                    )}
+                  </span>
+                  <span style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                    <Text
+                      strong
+                      style={{ fontSize: 17, color: "#1890ff" }}
+                    >
+                      {formatPrice(service.price)}
+                    </Text>
+                    <Button
+                      type="text"
+                      danger
+                      icon={<DeleteOutlined style={{ fontSize: 18 }} />}
+                      onClick={() => handleRemoveService(index)}
+                      style={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: 10,
+                      }}
+                    />
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
 
         {/* 총액 및 버튼 */}
         <div
@@ -349,20 +526,34 @@ export function StartServiceModal({
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
-            padding: "12px 0",
+            padding: "20px 0 0",
+            borderTop: "2px solid #f0f0f0",
           }}
         >
           <div>
-            <Text style={{ fontSize: 16 }}>총 금액: </Text>
-            <Text strong style={{ fontSize: 24, color: "#1890ff" }}>
+            <Text style={{ fontSize: 16, color: "#666" }}>총 결제 금액</Text>
+            <br />
+            <Text
+              strong
+              style={{
+                fontSize: 36,
+                color: "#1890ff",
+                fontWeight: 700,
+              }}
+            >
               {formatPrice(totalPrice)}
             </Text>
           </div>
-          <div>
+          <div style={{ display: "flex", gap: 12 }}>
             <Button
               size="large"
               onClick={handleCancel}
-              style={{ marginRight: 8, height: 48, paddingInline: 24 }}
+              style={{
+                height: 60,
+                paddingInline: 32,
+                fontSize: 18,
+                borderRadius: 14,
+              }}
             >
               취소
             </Button>
@@ -371,8 +562,15 @@ export function StartServiceModal({
               size="large"
               onClick={handleSubmit}
               disabled={selectedServices.length === 0}
-              icon={<CheckOutlined />}
-              style={{ height: 48, paddingInline: 32 }}
+              icon={<CheckOutlined style={{ fontSize: 20 }} />}
+              style={{
+                height: 60,
+                paddingInline: 40,
+                fontSize: 18,
+                fontWeight: 600,
+                borderRadius: 14,
+                boxShadow: "0 4px 12px rgba(24, 144, 255, 0.3)",
+              }}
             >
               시술 시작
             </Button>

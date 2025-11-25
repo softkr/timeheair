@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { Typography, Table, DatePicker, Card, Row, Col, Statistic, Select } from 'antd';
-import { DollarOutlined, ShoppingOutlined } from '@ant-design/icons';
+import { Typography, Table, DatePicker, Card, Row, Col, Statistic, Select, Tag, Button } from 'antd';
+import { DollarOutlined, ShoppingOutlined, BarChartOutlined, TeamOutlined, EnvironmentOutlined } from '@ant-design/icons';
 import { MainLayout } from '@/components/common/MainLayout';
 import { useStore } from '@/lib/store/useStore';
 import { SelectedService, LedgerEntry } from '@/lib/types';
@@ -56,6 +56,7 @@ export default function LedgerPage() {
   const stats = useMemo(() => {
     const totalRevenue = filteredLedger.reduce((sum, l) => sum + l.totalPrice, 0);
     const totalCount = filteredLedger.length;
+    const avgPrice = totalCount > 0 ? Math.round(totalRevenue / totalCount) : 0;
 
     // 좌석별 매출
     const seatRevenue = seats.map(seat => {
@@ -65,7 +66,7 @@ export default function LedgerPage() {
         revenue: seatLedger.reduce((sum, l) => sum + l.totalPrice, 0),
         count: seatLedger.length,
       };
-    });
+    }).sort((a, b) => b.revenue - a.revenue);
 
     // 직원별 매출
     const staffRevenue = staff.map(s => {
@@ -75,9 +76,9 @@ export default function LedgerPage() {
         revenue: staffLedger.reduce((sum, l) => sum + l.totalPrice, 0),
         count: staffLedger.length,
       };
-    });
+    }).sort((a, b) => b.revenue - a.revenue);
 
-    return { totalRevenue, totalCount, seatRevenue, staffRevenue };
+    return { totalRevenue, totalCount, avgPrice, seatRevenue, staffRevenue };
   }, [filteredLedger, seats, staff]);
 
   const columns = [
@@ -85,7 +86,12 @@ export default function LedgerPage() {
       title: '시간',
       dataIndex: 'completedAt',
       key: 'time',
-      render: (date: string) => dayjs(date).format('YYYY-MM-DD HH:mm'),
+      width: 160,
+      render: (date: string) => (
+        <span style={{ fontSize: 16 }}>
+          {dayjs(date).format('MM/DD HH:mm')}
+        </span>
+      ),
       sorter: (a: LedgerEntry, b: LedgerEntry) =>
         dayjs(a.completedAt).unix() - dayjs(b.completedAt).unix(),
     },
@@ -93,57 +99,88 @@ export default function LedgerPage() {
       title: '고객',
       dataIndex: 'memberName',
       key: 'member',
+      width: 120,
+      render: (name: string) => (
+        <span style={{ fontSize: 17, fontWeight: 500 }}>{name}</span>
+      ),
     },
     {
       title: '서비스',
       dataIndex: 'services',
       key: 'services',
-      render: (services: SelectedService[]) => services.map(s => s.name).join(', '),
-    },
-    {
-      title: '좌석',
-      dataIndex: 'seatId',
-      key: 'seat',
-      render: (seatId: number) => `${seatId}번`,
+      render: (services: SelectedService[]) => (
+        <span style={{ fontSize: 16, color: '#666' }}>
+          {services.map(s => s.name).join(', ')}
+        </span>
+      ),
     },
     {
       title: '담당',
       dataIndex: 'staffName',
       key: 'staff',
+      width: 100,
+      render: (name: string) => (
+        <span style={{ fontSize: 16 }}>{name}</span>
+      ),
     },
     {
       title: '금액',
       dataIndex: 'totalPrice',
       key: 'price',
+      width: 140,
       render: (price: number) => (
-        <Text strong style={{ color: '#1890ff' }}>
+        <Text strong style={{ color: '#1890ff', fontSize: 18 }}>
           {formatPrice(price)}
         </Text>
       ),
     },
   ];
 
+  const filterButtons = [
+    { key: 'day', label: '오늘' },
+    { key: 'week', label: '이번 주' },
+    { key: 'month', label: '이번 달' },
+  ];
+
   return (
     <MainLayout>
-      <div style={{ marginBottom: 24 }}>
-        <Title level={4} style={{ margin: 0 }}>매출 리포트</Title>
-      </div>
+      {/* 헤더 */}
+      <Row gutter={20} style={{ marginBottom: 24 }}>
+        <Col flex="auto">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <BarChartOutlined style={{ fontSize: 28, color: '#1890ff' }} />
+            <Title level={3} style={{ margin: 0, fontSize: 26 }}>매출 리포트</Title>
+          </div>
+        </Col>
+      </Row>
 
-      <div style={{ marginBottom: 24 }}>
+      {/* 필터 */}
+      <Card
+        style={{ marginBottom: 20, borderRadius: 16 }}
+        styles={{ body: { padding: 20 } }}
+      >
         <Row gutter={16} align="middle">
           <Col>
-            <Select
-              value={filterType}
-              onChange={handleFilterChange}
-              style={{ width: 120 }}
-            >
-              <Select.Option value="day">오늘</Select.Option>
-              <Select.Option value="week">이번 주</Select.Option>
-              <Select.Option value="month">이번 달</Select.Option>
-              <Select.Option value="custom">기간 선택</Select.Option>
-            </Select>
+            <div style={{ display: 'flex', gap: 8 }}>
+              {filterButtons.map((btn) => (
+                <Button
+                  key={btn.key}
+                  type={filterType === btn.key ? 'primary' : 'default'}
+                  onClick={() => handleFilterChange(btn.key as 'day' | 'week' | 'month')}
+                  size="large"
+                  style={{
+                    height: 48,
+                    paddingInline: 24,
+                    fontSize: 16,
+                    borderRadius: 10,
+                  }}
+                >
+                  {btn.label}
+                </Button>
+              ))}
+            </div>
           </Col>
-          <Col>
+          <Col flex="auto">
             <RangePicker
               value={dateRange}
               onChange={(dates) => {
@@ -152,65 +189,182 @@ export default function LedgerPage() {
                   setFilterType('custom');
                 }
               }}
+              size="large"
+              style={{ width: '100%', maxWidth: 320 }}
             />
           </Col>
+          <Col>
+            <Text style={{ fontSize: 15, color: '#666' }}>
+              {dateRange[0].format('YYYY.MM.DD')} ~ {dateRange[1].format('YYYY.MM.DD')}
+            </Text>
+          </Col>
         </Row>
-      </div>
+      </Card>
 
-      <Row gutter={16} style={{ marginBottom: 24 }}>
-        <Col xs={24} sm={12} md={6}>
-          <Card>
-            <Statistic
-              title="총 매출"
-              value={stats.totalRevenue}
-              prefix={<DollarOutlined />}
-              suffix="원"
-              formatter={(value) => new Intl.NumberFormat('ko-KR').format(value as number)}
-            />
+      {/* 통계 카드 */}
+      <Row gutter={20} style={{ marginBottom: 24 }}>
+        <Col xs={24} sm={12} md={8}>
+          <Card
+            style={{
+              borderRadius: 16,
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            }}
+            styles={{ body: { padding: 24 } }}
+          >
+            <div style={{ color: 'rgba(255,255,255,0.8)', fontSize: 15, marginBottom: 8 }}>
+              <DollarOutlined style={{ marginRight: 8 }} />
+              총 매출
+            </div>
+            <div style={{ color: '#fff', fontSize: 36, fontWeight: 700 }}>
+              {new Intl.NumberFormat('ko-KR').format(stats.totalRevenue)}
+              <span style={{ fontSize: 18, fontWeight: 400, marginLeft: 4 }}>원</span>
+            </div>
           </Card>
         </Col>
-        <Col xs={24} sm={12} md={6}>
-          <Card>
-            <Statistic
-              title="총 건수"
-              value={stats.totalCount}
-              prefix={<ShoppingOutlined />}
-              suffix="건"
-            />
+        <Col xs={24} sm={12} md={8}>
+          <Card style={{ borderRadius: 16 }} styles={{ body: { padding: 24 } }}>
+            <div style={{ color: '#666', fontSize: 15, marginBottom: 8 }}>
+              <ShoppingOutlined style={{ marginRight: 8 }} />
+              총 건수
+            </div>
+            <div style={{ color: '#333', fontSize: 36, fontWeight: 700 }}>
+              {stats.totalCount}
+              <span style={{ fontSize: 18, fontWeight: 400, marginLeft: 4 }}>건</span>
+            </div>
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} md={8}>
+          <Card style={{ borderRadius: 16 }} styles={{ body: { padding: 24 } }}>
+            <div style={{ color: '#666', fontSize: 15, marginBottom: 8 }}>
+              <BarChartOutlined style={{ marginRight: 8 }} />
+              평균 단가
+            </div>
+            <div style={{ color: '#1890ff', fontSize: 36, fontWeight: 700 }}>
+              {new Intl.NumberFormat('ko-KR').format(stats.avgPrice)}
+              <span style={{ fontSize: 18, fontWeight: 400, marginLeft: 4 }}>원</span>
+            </div>
           </Card>
         </Col>
       </Row>
 
-      <Row gutter={16} style={{ marginBottom: 24 }}>
+      {/* 세부 매출 */}
+      <Row gutter={20} style={{ marginBottom: 24 }}>
         <Col xs={24} md={12}>
-          <Card title="좌석별 매출" size="small">
-            {stats.seatRevenue.map(seat => (
-              <div key={seat.name} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                <Text>{seat.name}</Text>
-                <Text strong>{formatPrice(seat.revenue)} ({seat.count}건)</Text>
+          <Card
+            title={
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <EnvironmentOutlined style={{ fontSize: 20, color: '#1890ff' }} />
+                <span style={{ fontSize: 18 }}>좌석별 매출</span>
+              </div>
+            }
+            style={{ borderRadius: 16, height: '100%' }}
+            styles={{ body: { padding: 20 } }}
+          >
+            {stats.seatRevenue.map((seat, index) => (
+              <div
+                key={seat.name}
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  padding: '14px 16px',
+                  background: index === 0 ? '#f0f5ff' : 'transparent',
+                  borderRadius: 10,
+                  marginBottom: 8,
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  {index === 0 && <Tag color="gold">TOP</Tag>}
+                  <Text style={{ fontSize: 17 }}>{seat.name}</Text>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <Text strong style={{ fontSize: 18, color: '#1890ff' }}>
+                    {formatPrice(seat.revenue)}
+                  </Text>
+                  <Text type="secondary" style={{ marginLeft: 8, fontSize: 14 }}>
+                    {seat.count}건
+                  </Text>
+                </div>
               </div>
             ))}
           </Card>
         </Col>
         <Col xs={24} md={12}>
-          <Card title="직원별 매출" size="small">
-            {stats.staffRevenue.map(s => (
-              <div key={s.name} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                <Text>{s.name}</Text>
-                <Text strong>{formatPrice(s.revenue)} ({s.count}건)</Text>
+          <Card
+            title={
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <TeamOutlined style={{ fontSize: 20, color: '#52c41a' }} />
+                <span style={{ fontSize: 18 }}>직원별 매출</span>
+              </div>
+            }
+            style={{ borderRadius: 16, height: '100%' }}
+            styles={{ body: { padding: 20 } }}
+          >
+            {stats.staffRevenue.map((s, index) => (
+              <div
+                key={s.name}
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  padding: '14px 16px',
+                  background: index === 0 ? '#f6ffed' : 'transparent',
+                  borderRadius: 10,
+                  marginBottom: 8,
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  {index === 0 && <Tag color="gold">TOP</Tag>}
+                  <Text style={{ fontSize: 17 }}>{s.name}</Text>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <Text strong style={{ fontSize: 18, color: '#52c41a' }}>
+                    {formatPrice(s.revenue)}
+                  </Text>
+                  <Text type="secondary" style={{ marginLeft: 8, fontSize: 14 }}>
+                    {s.count}건
+                  </Text>
+                </div>
               </div>
             ))}
           </Card>
         </Col>
       </Row>
 
-      <Card title="상세 내역">
+      {/* 상세 내역 */}
+      <Card
+        title={
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <ShoppingOutlined style={{ fontSize: 20, color: '#1890ff' }} />
+            <span style={{ fontSize: 18 }}>상세 내역</span>
+            <Tag color="blue" style={{ marginLeft: 8 }}>
+              {filteredLedger.length}건
+            </Tag>
+          </div>
+        }
+        style={{ borderRadius: 16 }}
+        styles={{ body: { padding: 16 } }}
+      >
         <Table
           dataSource={filteredLedger}
           columns={columns}
           rowKey="id"
-          pagination={{ pageSize: 10 }}
-          locale={{ emptyText: '해당 기간에 매출이 없습니다' }}
+          pagination={{
+            pageSize: 10,
+            showTotal: (total) => `총 ${total}건`,
+          }}
+          locale={{
+            emptyText: (
+              <div style={{ padding: '60px 0' }}>
+                <DollarOutlined style={{ fontSize: 56, color: '#d9d9d9', marginBottom: 16 }} />
+                <br />
+                <Text type="secondary" style={{ fontSize: 17 }}>
+                  해당 기간에 매출이 없습니다
+                </Text>
+              </div>
+            )
+          }}
+          size="large"
         />
       </Card>
     </MainLayout>

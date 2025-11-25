@@ -12,14 +12,20 @@ import {
   Card,
   Input,
   Button,
-  Space,
+  Statistic,
 } from "antd";
-import { SearchOutlined, UserOutlined } from "@ant-design/icons";
+import {
+  SearchOutlined,
+  UserOutlined,
+  CheckCircleOutlined,
+  ClockCircleOutlined,
+  CalendarOutlined,
+} from "@ant-design/icons";
 import { MainLayout } from "@/components/common/MainLayout";
 import { SeatCard } from "@/components/dashboard/SeatCard";
 import { StartServiceModal } from "@/components/dashboard/StartServiceModal";
 import { useStore } from "@/lib/store/useStore";
-import { SelectedService, Member } from "@/lib/types";
+import { SelectedService } from "@/lib/types";
 import dayjs from "dayjs";
 
 const { Title, Text } = Typography;
@@ -38,6 +44,10 @@ export default function DashboardPage() {
   const [selectedSeatId, setSelectedSeatId] = useState<number | null>(null);
   const [memberSearchText, setMemberSearchText] = useState("");
   const [showMemberSearch, setShowMemberSearch] = useState(false);
+
+  // 좌석 상태 통계
+  const availableCount = seats.filter((s) => s.status === "available").length;
+  const inUseCount = seats.filter((s) => s.status === "in_use").length;
 
   // 회원 검색 결과
   const searchedMembers = memberSearchText
@@ -87,10 +97,54 @@ export default function DashboardPage() {
     if (!seat || !seat.currentSession) return;
 
     Modal.confirm({
-      title: "시술 완료",
-      content: `${seat.currentSession.memberName}님의 시술을 완료하시겠습니까?`,
+      title: (
+        <span style={{ fontSize: 20 }}>
+          <CheckCircleOutlined
+            style={{ color: "#52c41a", marginRight: 10 }}
+          />
+          시술 완료
+        </span>
+      ),
+      content: (
+        <div style={{ padding: "16px 0", fontSize: 17 }}>
+          <strong>{seat.currentSession.memberName}</strong>님의 시술을
+          완료하시겠습니까?
+          <div
+            style={{
+              marginTop: 12,
+              padding: 12,
+              background: "#f5f5f5",
+              borderRadius: 8,
+            }}
+          >
+            <Text style={{ fontSize: 16 }}>
+              결제 금액:{" "}
+              <strong style={{ color: "#1890ff", fontSize: 20 }}>
+                {new Intl.NumberFormat("ko-KR").format(
+                  seat.currentSession.totalPrice,
+                )}
+                원
+              </strong>
+            </Text>
+          </div>
+        </div>
+      ),
       okText: "완료",
       cancelText: "취소",
+      okButtonProps: {
+        size: "large",
+        style: {
+          height: 52,
+          fontSize: 17,
+          background: "#52c41a",
+          borderColor: "#52c41a",
+        },
+      },
+      cancelButtonProps: {
+        size: "large",
+        style: { height: 52, fontSize: 17 },
+      },
+      width: 480,
       onOk: () => {
         addLedgerEntry({
           id: `ledger-${Date.now()}`,
@@ -135,8 +189,9 @@ export default function DashboardPage() {
       title: "시간",
       dataIndex: "reservedAt",
       key: "time",
+      width: 100,
       render: (date: string) => (
-        <span style={{ fontSize: 16, fontWeight: 500 }}>
+        <span style={{ fontSize: 18, fontWeight: 600, color: "#333" }}>
           {dayjs(date).format("HH:mm")}
         </span>
       ),
@@ -145,14 +200,17 @@ export default function DashboardPage() {
       title: "고객",
       dataIndex: "memberName",
       key: "member",
-      render: (name: string) => <span style={{ fontSize: 16 }}>{name}</span>,
+      width: 120,
+      render: (name: string) => (
+        <span style={{ fontSize: 17, fontWeight: 500 }}>{name}</span>
+      ),
     },
     {
       title: "서비스",
       dataIndex: "services",
       key: "services",
       render: (services: SelectedService[]) => (
-        <span style={{ fontSize: 15 }}>
+        <span style={{ fontSize: 16, color: "#666" }}>
           {services.map((s) => s.name).join(", ")}
         </span>
       ),
@@ -161,12 +219,16 @@ export default function DashboardPage() {
       title: "담당",
       dataIndex: "staffName",
       key: "staff",
-      render: (name: string) => <span style={{ fontSize: 15 }}>{name}</span>,
+      width: 100,
+      render: (name: string) => (
+        <span style={{ fontSize: 16 }}>{name}</span>
+      ),
     },
     {
       title: "상태",
       dataIndex: "status",
       key: "status",
+      width: 100,
       render: (status: string) => {
         const statusMap: Record<string, { color: string; text: string }> = {
           scheduled: { color: "blue", text: "대기" },
@@ -177,7 +239,7 @@ export default function DashboardPage() {
         return (
           <Tag
             color={config.color}
-            style={{ fontSize: 14, padding: "4px 12px" }}
+            style={{ fontSize: 15, padding: "6px 14px", fontWeight: 500 }}
           >
             {config.text}
           </Tag>
@@ -188,71 +250,117 @@ export default function DashboardPage() {
 
   return (
     <MainLayout>
-      <Row gutter={12} style={{ marginBottom: 12 }}>
+      {/* 상단 통계 및 헤더 */}
+      <Row gutter={20} style={{ marginBottom: 20 }}>
         <Col flex="auto">
-          <Title level={4} style={{ margin: 0 }}>
-            좌석 현황
-          </Title>
+          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+            <Title level={3} style={{ margin: 0, fontSize: 26 }}>
+              좌석 현황
+            </Title>
+            <div style={{ display: "flex", gap: 12 }}>
+              <Tag
+                color="green"
+                style={{
+                  fontSize: 15,
+                  padding: "6px 16px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                }}
+              >
+                <CheckCircleOutlined />
+                비어있음 {availableCount}
+              </Tag>
+              <Tag
+                color="red"
+                style={{
+                  fontSize: 15,
+                  padding: "6px 16px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                }}
+              >
+                <ClockCircleOutlined />
+                시술중 {inUseCount}
+              </Tag>
+            </div>
+          </div>
         </Col>
         <Col>
           <Button
-            icon={<UserOutlined />}
+            icon={<UserOutlined style={{ fontSize: 18 }} />}
             onClick={() => setShowMemberSearch(!showMemberSearch)}
             type={showMemberSearch ? "primary" : "default"}
+            size="large"
+            style={{
+              height: 52,
+              paddingInline: 24,
+              fontSize: 16,
+              borderRadius: 12,
+            }}
           >
             회원 조회
           </Button>
         </Col>
       </Row>
 
+      {/* 회원 검색 */}
       {showMemberSearch && (
         <Card
-          size="small"
-          style={{ marginBottom: 16, borderRadius: 8 }}
-          bodyStyle={{ padding: 12 }}
+          style={{ marginBottom: 20, borderRadius: 16 }}
+          styles={{ body: { padding: 20 } }}
         >
           <Input
             placeholder="이름 또는 전화번호로 검색"
-            prefix={<SearchOutlined />}
+            prefix={<SearchOutlined style={{ fontSize: 18, color: "#999" }} />}
             value={memberSearchText}
             onChange={(e) => setMemberSearchText(e.target.value)}
             size="large"
-            style={{ marginBottom: 12 }}
+            style={{ marginBottom: 16 }}
             allowClear
           />
           {memberSearchText && (
-            <div style={{ maxHeight: 200, overflowY: "auto" }}>
+            <div style={{ maxHeight: 240, overflowY: "auto" }}>
               {searchedMembers.length > 0 ? (
                 searchedMembers.map((member) => (
                   <div
                     key={member.id}
                     style={{
-                      padding: "12px",
-                      borderBottom: "1px solid #f0f0f0",
+                      padding: "16px 20px",
+                      background: "#fafafa",
+                      borderRadius: 12,
+                      marginBottom: 10,
                       display: "flex",
                       justifyContent: "space-between",
                       alignItems: "center",
                     }}
                   >
                     <div>
-                      <Text strong style={{ fontSize: 16 }}>
+                      <Text strong style={{ fontSize: 18 }}>
                         {member.name}
                       </Text>
                       <br />
-                      <Text type="secondary">{member.phone}</Text>
+                      <Text type="secondary" style={{ fontSize: 15 }}>
+                        {member.phone}
+                      </Text>
                     </div>
                     <div style={{ textAlign: "right" }}>
                       <Text
                         style={{
+                          fontSize: 16,
                           color:
-                            (member.stamps || 0) >= 10 ? "#52c41a" : undefined,
+                            (member.stamps || 0) >= 10 ? "#52c41a" : "#666",
                           fontWeight: (member.stamps || 0) >= 10 ? 600 : 400,
                         }}
                       >
                         스탬프 {member.stamps || 0}/10
                       </Text>
                       {(member.stamps || 0) >= 10 && (
-                        <Tag color="green" style={{ marginLeft: 8 }}>
+                        <Tag
+                          color="green"
+                          style={{ marginLeft: 10, fontSize: 14 }}
+                        >
                           혜택가능
                         </Tag>
                       )}
@@ -260,16 +368,21 @@ export default function DashboardPage() {
                   </div>
                 ))
               ) : (
-                <Text type="secondary">검색 결과가 없습니다</Text>
+                <div style={{ textAlign: "center", padding: 24 }}>
+                  <Text type="secondary" style={{ fontSize: 16 }}>
+                    검색 결과가 없습니다
+                  </Text>
+                </div>
               )}
             </div>
           )}
         </Card>
       )}
 
-      <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
+      {/* 좌석 그리드 */}
+      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
         {seats.map((seat) => (
-          <Col key={seat.id} xs={24} sm={12} md={8} lg={8} xl={4.8}>
+          <Col key={seat.id} xs={24} sm={12} md={8} lg={8} xl={6}>
             <SeatCard
               seat={seat}
               onClickAvailable={handleClickAvailable}
@@ -279,21 +392,40 @@ export default function DashboardPage() {
         ))}
       </Row>
 
+      {/* 오늘 예약 */}
       <Card
         title={
-          <Title level={5} style={{ margin: 0 }}>
-            오늘 예약
-          </Title>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <CalendarOutlined style={{ fontSize: 22, color: "#1890ff" }} />
+            <Title level={4} style={{ margin: 0, fontSize: 20 }}>
+              오늘 예약
+            </Title>
+            <Tag color="blue" style={{ marginLeft: 8, fontSize: 14 }}>
+              {todayReservations.length}건
+            </Tag>
+          </div>
         }
-        style={{ borderRadius: 8 }}
-        bodyStyle={{ padding: 12 }}
+        style={{ borderRadius: 16 }}
+        styles={{ body: { padding: 16 } }}
       >
         <Table
           dataSource={todayReservations}
           columns={reservationColumns}
           rowKey="id"
           pagination={false}
-          locale={{ emptyText: "오늘 예약이 없습니다" }}
+          locale={{
+            emptyText: (
+              <div style={{ padding: "40px 0" }}>
+                <CalendarOutlined
+                  style={{ fontSize: 48, color: "#d9d9d9", marginBottom: 16 }}
+                />
+                <br />
+                <Text type="secondary" style={{ fontSize: 16 }}>
+                  오늘 예약이 없습니다
+                </Text>
+              </div>
+            ),
+          }}
           size="large"
         />
       </Card>
