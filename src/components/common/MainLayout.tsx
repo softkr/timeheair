@@ -12,6 +12,7 @@ import {
 } from "@ant-design/icons";
 import { useRouter, usePathname } from "next/navigation";
 import { useStore } from "@/lib/store/useStore";
+import Logo from "./Logo";
 import dayjs from "dayjs";
 import "dayjs/locale/ko";
 
@@ -172,13 +173,22 @@ export function MainLayout({ children }: MainLayoutProps) {
             background: "rgba(255,255,255,0.02)",
           }}
         >
-          <div style={{ textAlign: "center" }}>
+          <div
+            style={{
+              textAlign: "center",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: "12px",
+            }}
+          >
+            <Logo size="medium" />
             <Title
-              level={2}
+              level={4}
               style={{
                 margin: 0,
                 color: "#fff",
-                fontSize: 28,
+                fontSize: 16,
                 fontWeight: 700,
                 letterSpacing: 2,
               }}
@@ -188,7 +198,7 @@ export function MainLayout({ children }: MainLayoutProps) {
             <Text
               style={{
                 color: "rgba(255,255,255,0.5)",
-                fontSize: 13,
+                fontSize: 12,
                 letterSpacing: 1,
               }}
             >

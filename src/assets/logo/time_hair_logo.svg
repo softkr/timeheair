@@ -1,0 +1,33 @@
+<svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg" id="timeHairLogo">
+                            <!-- Definitions for reusable gradients -->
+                            <defs>
+                                <linearGradient id="goldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" style="stop-color:#D4AF37;stop-opacity:1"></stop>
+                                    <stop offset="100%" style="stop-color:#AA8A26;stop-opacity:1"></stop>
+                                </linearGradient>
+                            </defs>
+                            
+                            <!-- Outer Clock Ring (Stylized Hair Strand) -->
+                            <circle cx="100" cy="100" r="90" stroke="url(#goldGradient)" stroke-width="4" stroke-linecap="round" stroke-dasharray="450" stroke-dashoffset="50" transform="rotate(-90 100 100)"></circle>
+                            
+                            <!-- Clock Hands / Scissors Logic -->
+                            <g transform="translate(100, 100)">
+                                <!-- Minute Hand (Scissor Blade Long) - Pointing at 12 -->
+                                <g transform="rotate(-15)">
+                                    <path d="M-4 0 L-2 -65 Q0 -75 2 -65 L4 0 Z" fill="#1F2937"></path> <!-- Blade -->
+                                    <circle cx="0" cy="12" r="8" stroke="#1F2937" stroke-width="3" fill="none"></circle> <!-- Handle -->
+                                </g>
+
+                                <!-- Hour Hand (Scissor Blade Short) - Pointing at 2 -->
+                                <g transform="rotate(45)">
+                                    <path d="M-4 0 L-2 -45 Q0 -52 2 -45 L4 0 Z" fill="#1F2937"></path> <!-- Blade -->
+                                    <circle cx="0" cy="12" r="8" stroke="#1F2937" stroke-width="3" fill="none"></circle> <!-- Handle -->
+                                </g>
+                                
+                                <!-- Center Pivot (Screw) -->
+                                <circle cx="0" cy="0" r="4" fill="url(#goldGradient)" stroke="white" stroke-width="1"></circle>
+                            </g>
+
+                            <!-- Text Label (Optional Integration) -->
+                            <text x="100" y="150" text-anchor="middle" font-family="sans-serif" font-weight="bold" font-size="16" fill="#1F2937" letter-spacing="2">TIME HAIR</text>
+                        </svg>

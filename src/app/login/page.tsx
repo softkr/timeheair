@@ -5,6 +5,7 @@ import { Form, Input, Button, Card, Typography, message, Checkbox } from "antd";
 import { UserOutlined, LockOutlined, ScissorOutlined } from "@ant-design/icons";
 import { useRouter } from "next/navigation";
 import { useStore } from "@/lib/store/useStore";
+import Logo from "@/components/common/Logo";
 
 const { Title, Text } = Typography;
 
@@ -58,18 +59,13 @@ export default function LoginPage() {
         <div style={{ textAlign: "center", marginBottom: 48 }}>
           <div
             style={{
-              width: 80,
-              height: 80,
               margin: "0 auto 20px",
-              borderRadius: "50%",
-              background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              boxShadow: "0 8px 24px rgba(102, 126, 234, 0.4)",
             }}
           >
-            <ScissorOutlined style={{ fontSize: 36, color: "#fff" }} />
+            <Logo size="large" showText={false} />
           </div>
           <Title
             level={1}
