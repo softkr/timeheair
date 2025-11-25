@@ -48,6 +48,7 @@ export function SeatCard({
           color: "#52c41a",
           bgColor: "linear-gradient(135deg, #f6ffed 0%, #d9f7be 100%)",
           text: "비어있음",
+          icon: "check",
           borderColor: "#b7eb8f",
         };
       case "in_use":
@@ -55,6 +56,7 @@ export function SeatCard({
           color: "#ff4d4f",
           bgColor: "linear-gradient(135deg, #fff1f0 0%, #ffccc7 100%)",
           text: "시술중",
+          icon: "scissor",
           borderColor: "#ffa39e",
         };
       case "reserved":
@@ -62,6 +64,7 @@ export function SeatCard({
           color: "#faad14",
           bgColor: "linear-gradient(135deg, #fffbe6 0%, #ffe58f 100%)",
           text: "예약됨",
+          icon: "clock",
           borderColor: "#ffd666",
         };
       default:
@@ -69,6 +72,7 @@ export function SeatCard({
           color: "#d9d9d9",
           bgColor: "#fafafa",
           text: "",
+          icon: "default",
           borderColor: "#d9d9d9",
         };
     }
@@ -89,7 +93,7 @@ export function SeatCard({
 
   return (
     <Card
-      className={`kiosk-seat-card ${seat.status === "in_use" ? "status-in-use" : ""}`}
+      className="kiosk-seat-card"
       style={{
         height: "100%",
         background: statusConfig.bgColor,
@@ -132,8 +136,14 @@ export function SeatCard({
             padding: "8px 20px",
             borderRadius: 20,
             fontWeight: 600,
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 6,
           }}
         >
+          {statusConfig.icon === "check" && <CheckCircleOutlined />}
+          {statusConfig.icon === "scissor" && <ScissorOutlined />}
+          {statusConfig.icon === "clock" && <ClockCircleOutlined />}
           {statusConfig.text}
         </Tag>
       </div>

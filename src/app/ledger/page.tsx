@@ -355,12 +355,18 @@ export default function LedgerPage() {
           }}
           locale={{
             emptyText: (
-              <div style={{ padding: '60px 0' }}>
-                <DollarOutlined style={{ fontSize: 56, color: '#d9d9d9', marginBottom: 16 }} />
-                <br />
-                <Text type="secondary" style={{ fontSize: 17 }}>
+              <div className="empty-state">
+                <DollarOutlined className="empty-state-icon" />
+                <div className="empty-state-text">
                   해당 기간에 매출이 없습니다
-                </Text>
+                </div>
+                <Button
+                  type="default"
+                  onClick={() => handleFilterChange('month')}
+                  style={{ borderRadius: 10 }}
+                >
+                  이번 달 전체 보기
+                </Button>
               </div>
             )
           }}

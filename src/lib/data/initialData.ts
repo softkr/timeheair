@@ -3,6 +3,8 @@ import { Staff, Seat } from '../types';
 export const initialStaff: Staff[] = [
   { id: 's001', name: '직원1' },
   { id: 's002', name: '직원2' },
+  { id: 's003', name: '직원3' },
+  { id: 's004', name: '직원4' },
 ];
 
 export const initialSeats: Seat[] = [

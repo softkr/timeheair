@@ -10,13 +10,9 @@ import {
   message,
   Modal,
   Card,
-  Input,
   Button,
-  Statistic,
 } from "antd";
 import {
-  SearchOutlined,
-  UserOutlined,
   CheckCircleOutlined,
   ClockCircleOutlined,
   CalendarOutlined,
@@ -38,25 +34,13 @@ export default function DashboardPage() {
     addLedgerEntry,
     staff,
     addStamp,
-    members,
   } = useStore();
   const [startModalOpen, setStartModalOpen] = useState(false);
   const [selectedSeatId, setSelectedSeatId] = useState<number | null>(null);
-  const [memberSearchText, setMemberSearchText] = useState("");
-  const [showMemberSearch, setShowMemberSearch] = useState(false);
 
   // 좌석 상태 통계
   const availableCount = seats.filter((s) => s.status === "available").length;
   const inUseCount = seats.filter((s) => s.status === "in_use").length;
-
-  // 회원 검색 결과
-  const searchedMembers = memberSearchText
-    ? members.filter(
-        (m) =>
-          m.name.includes(memberSearchText) ||
-          m.phone.includes(memberSearchText),
-      )
-    : [];
 
   const handleClickAvailable = (seatId: number) => {
     setSelectedSeatId(seatId);
@@ -287,97 +271,7 @@ export default function DashboardPage() {
             </div>
           </div>
         </Col>
-        <Col>
-          <Button
-            icon={<UserOutlined style={{ fontSize: 18 }} />}
-            onClick={() => setShowMemberSearch(!showMemberSearch)}
-            type={showMemberSearch ? "primary" : "default"}
-            size="large"
-            style={{
-              height: 52,
-              paddingInline: 24,
-              fontSize: 16,
-              borderRadius: 12,
-            }}
-          >
-            회원 조회
-          </Button>
-        </Col>
       </Row>
-
-      {/* 회원 검색 */}
-      {showMemberSearch && (
-        <Card
-          style={{ marginBottom: 20, borderRadius: 16 }}
-          styles={{ body: { padding: 20 } }}
-        >
-          <Input
-            placeholder="이름 또는 전화번호로 검색"
-            prefix={<SearchOutlined style={{ fontSize: 18, color: "#999" }} />}
-            value={memberSearchText}
-            onChange={(e) => setMemberSearchText(e.target.value)}
-            size="large"
-            style={{ marginBottom: 16 }}
-            allowClear
-          />
-          {memberSearchText && (
-            <div style={{ maxHeight: 240, overflowY: "auto" }}>
-              {searchedMembers.length > 0 ? (
-                searchedMembers.map((member) => (
-                  <div
-                    key={member.id}
-                    style={{
-                      padding: "16px 20px",
-                      background: "#fafafa",
-                      borderRadius: 12,
-                      marginBottom: 10,
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                    }}
-                  >
-                    <div>
-                      <Text strong style={{ fontSize: 18 }}>
-                        {member.name}
-                      </Text>
-                      <br />
-                      <Text type="secondary" style={{ fontSize: 15 }}>
-                        {member.phone}
-                      </Text>
-                    </div>
-                    <div style={{ textAlign: "right" }}>
-                      <Text
-                        style={{
-                          fontSize: 16,
-                          color:
-                            (member.stamps || 0) >= 10 ? "#52c41a" : "#666",
-                          fontWeight: (member.stamps || 0) >= 10 ? 600 : 400,
-                        }}
-                      >
-                        스탬프 {member.stamps || 0}/10
-                      </Text>
-                      {(member.stamps || 0) >= 10 && (
-                        <Tag
-                          color="green"
-                          style={{ marginLeft: 10, fontSize: 14 }}
-                        >
-                          혜택가능
-                        </Tag>
-                      )}
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div style={{ textAlign: "center", padding: 24 }}>
-                  <Text type="secondary" style={{ fontSize: 16 }}>
-                    검색 결과가 없습니다
-                  </Text>
-                </div>
-              )}
-            </div>
-          )}
-        </Card>
-      )}
 
       {/* 좌석 그리드 */}
       <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
@@ -415,14 +309,19 @@ export default function DashboardPage() {
           pagination={false}
           locale={{
             emptyText: (
-              <div style={{ padding: "40px 0" }}>
-                <CalendarOutlined
-                  style={{ fontSize: 48, color: "#d9d9d9", marginBottom: 16 }}
-                />
-                <br />
-                <Text type="secondary" style={{ fontSize: 16 }}>
+              <div className="empty-state">
+                <CalendarOutlined className="empty-state-icon" />
+                <div className="empty-state-text">
                   오늘 예약이 없습니다
-                </Text>
+                </div>
+                <Button
+                  type="primary"
+                  icon={<CalendarOutlined />}
+                  onClick={() => window.location.href = '/reservations'}
+                  style={{ borderRadius: 10 }}
+                >
+                  새 예약 만들기
+                </Button>
               </div>
             ),
           }}

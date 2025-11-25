@@ -325,12 +325,19 @@ export default function ReservationsPage() {
           }}
           locale={{
             emptyText: (
-              <div style={{ padding: '60px 0' }}>
-                <CalendarOutlined style={{ fontSize: 56, color: '#d9d9d9', marginBottom: 16 }} />
-                <br />
-                <Text type="secondary" style={{ fontSize: 17 }}>
+              <div className="empty-state">
+                <CalendarOutlined className="empty-state-icon" />
+                <div className="empty-state-text">
                   해당 날짜에 예약이 없습니다
-                </Text>
+                </div>
+                <Button
+                  type="primary"
+                  icon={<PlusOutlined />}
+                  onClick={() => setModalOpen(true)}
+                  style={{ borderRadius: 10 }}
+                >
+                  새 예약 만들기
+                </Button>
               </div>
             )
           }}

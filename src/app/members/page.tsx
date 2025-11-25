@@ -302,12 +302,19 @@ export default function MembersPage() {
           }}
           locale={{
             emptyText: (
-              <div style={{ padding: '60px 0' }}>
-                <UserOutlined style={{ fontSize: 56, color: '#d9d9d9', marginBottom: 16 }} />
-                <br />
-                <Text type="secondary" style={{ fontSize: 17 }}>
+              <div className="empty-state">
+                <UserOutlined className="empty-state-icon" />
+                <div className="empty-state-text">
                   등록된 고객이 없습니다
-                </Text>
+                </div>
+                <Button
+                  type="primary"
+                  icon={<PlusOutlined />}
+                  onClick={handleAdd}
+                  style={{ borderRadius: 10 }}
+                >
+                  새 고객 등록하기
+                </Button>
               </div>
             )
           }}

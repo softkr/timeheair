@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Layout, Menu, Typography, Button, Badge } from "antd";
+import { Layout, Menu, Typography, Button, Badge, Modal } from "antd";
 import {
   DashboardOutlined,
   CalendarOutlined,
@@ -13,8 +13,11 @@ import {
 import { useRouter, usePathname } from "next/navigation";
 import { useStore } from "@/lib/store/useStore";
 import dayjs from "dayjs";
+import "dayjs/locale/ko";
 
-const { Header, Sider, Content } = Layout;
+dayjs.locale("ko");
+
+const { Header, Sider, Content, Footer } = Layout;
 const { Title, Text } = Typography;
 
 interface MainLayoutProps {
@@ -89,8 +92,35 @@ export function MainLayout({ children }: MainLayoutProps) {
   };
 
   const handleLogout = () => {
-    logout();
-    router.push("/login");
+    Modal.confirm({
+      title: (
+        <span style={{ fontSize: 20 }}>
+          <LogoutOutlined style={{ color: "#ff4d4f", marginRight: 10 }} />
+          로그아웃
+        </span>
+      ),
+      content: (
+        <span style={{ fontSize: 17 }}>
+          정말 로그아웃 하시겠습니까?
+        </span>
+      ),
+      okText: "로그아웃",
+      cancelText: "취소",
+      okButtonProps: {
+        danger: true,
+        size: "large",
+        style: { height: 52, fontSize: 17 },
+      },
+      cancelButtonProps: {
+        size: "large",
+        style: { height: 52, fontSize: 17 },
+      },
+      width: 420,
+      onOk: () => {
+        logout();
+        router.push("/login");
+      },
+    });
   };
 
   return (
@@ -238,29 +268,23 @@ export function MainLayout({ children }: MainLayoutProps) {
               alignItems: "center",
               gap: 12,
               background: "#f5f5f5",
-              padding: "12px 24px",
-              borderRadius: 12,
+              padding: "8px 16px",
+              borderRadius: 10,
             }}
           >
             <ClockCircleOutlined
               style={{ fontSize: 20, color: "#1890ff" }}
             />
-            <div style={{ textAlign: "right" }}>
-              <Text
-                style={{
-                  fontSize: 22,
-                  fontWeight: 600,
-                  color: "#333",
-                  fontVariantNumeric: "tabular-nums",
-                }}
-              >
-                {currentTime.format("HH:mm:ss")}
-              </Text>
-              <br />
-              <Text style={{ fontSize: 13, color: "#888" }}>
-                {currentTime.format("YYYY년 MM월 DD일 (ddd)")}
-              </Text>
-            </div>
+            <Text
+              style={{
+                fontSize: 18,
+                fontWeight: 600,
+                color: "#333",
+                fontVariantNumeric: "tabular-nums",
+              }}
+            >
+              {currentTime.format("MM월 DD일 (ddd) HH:mm")}
+            </Text>
           </div>
         </Header>
 
@@ -277,6 +301,25 @@ export function MainLayout({ children }: MainLayoutProps) {
         >
           {children}
         </Content>
+
+        {/* 모바일 하단 네비게이션 */}
+        <div className="mobile-bottom-nav">
+          {[
+            { key: "/", icon: <DashboardOutlined />, label: "대시보드" },
+            { key: "/reservations", icon: <CalendarOutlined />, label: "예약" },
+            { key: "/members", icon: <UserOutlined />, label: "고객" },
+            { key: "/ledger", icon: <DollarOutlined />, label: "매출" },
+          ].map((item) => (
+            <div
+              key={item.key}
+              className={`mobile-nav-item ${pathname === item.key ? "active" : ""}`}
+              onClick={() => router.push(item.key)}
+            >
+              <span className="mobile-nav-icon">{item.icon}</span>
+              <span className="mobile-nav-label">{item.label}</span>
+            </div>
+          ))}
+        </div>
       </Layout>
     </Layout>
   );

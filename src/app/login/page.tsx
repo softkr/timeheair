@@ -96,6 +96,7 @@ export default function LoginPage() {
         >
           <Form.Item
             name="username"
+            label={<span style={{ fontSize: 15, fontWeight: 500, color: "#555" }}>아이디</span>}
             rules={[{ required: true, message: "아이디를 입력해주세요" }]}
             style={{ marginBottom: 20 }}
           >
@@ -105,7 +106,8 @@ export default function LoginPage() {
                   style={{ fontSize: 20, color: "#999", marginRight: 8 }}
                 />
               }
-              placeholder="아이디"
+              placeholder="아이디를 입력하세요"
+              aria-label="아이디"
               style={{
                 height: 64,
                 fontSize: 18,
@@ -118,6 +120,7 @@ export default function LoginPage() {
 
           <Form.Item
             name="password"
+            label={<span style={{ fontSize: 15, fontWeight: 500, color: "#555" }}>비밀번호</span>}
             rules={[{ required: true, message: "비밀번호를 입력해주세요" }]}
             style={{ marginBottom: 20 }}
           >
@@ -127,7 +130,8 @@ export default function LoginPage() {
                   style={{ fontSize: 20, color: "#999", marginRight: 8 }}
                 />
               }
-              placeholder="비밀번호"
+              placeholder="비밀번호를 입력하세요"
+              aria-label="비밀번호"
               style={{
                 height: 64,
                 fontSize: 18,

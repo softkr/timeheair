@@ -318,18 +318,47 @@ body {
 /* ========================================
    애니메이션
    ======================================== */
-@keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.7; }
+@keyframes subtlePulse {
+    0%, 100% {
+        box-shadow: 0 4px 12px rgba(255, 77, 79, 0.15);
+    }
+    50% {
+        box-shadow: 0 4px 20px rgba(255, 77, 79, 0.25);
+    }
 }
 
 .status-in-use {
-    animation: pulse 2s ease-in-out infinite;
+    animation: subtlePulse 3s ease-in-out infinite;
 }
 
 /* ========================================
    반응형 (태블릿/키오스크)
    ======================================== */
+
+/* 태블릿 세로 */
+@media (max-width: 1024px) {
+    .ant-layout-sider {
+        width: 220px !important;
+        min-width: 220px !important;
+        max-width: 220px !important;
+    }
+
+    .ant-layout-sider + .ant-layout {
+        margin-left: 220px !important;
+    }
+
+    .ant-table-thead > tr > th,
+    .ant-table-tbody > tr > td {
+        padding: 12px 8px !important;
+        font-size: 14px;
+    }
+
+    .ant-card-body {
+        padding: 16px !important;
+    }
+}
+
+/* 태블릿 가로 */
 @media (max-width: 1200px) {
     .ant-table-thead > tr > th,
     .ant-table-tbody > tr > td {
@@ -338,6 +367,74 @@ body {
     }
 }
 
+/* 모바일 */
+@media (max-width: 768px) {
+    .ant-layout-sider {
+        display: none !important;
+    }
+
+    .ant-layout-sider + .ant-layout {
+        margin-left: 0 !important;
+    }
+
+    .ant-layout-header {
+        padding: 0 16px !important;
+        height: 64px !important;
+    }
+
+    .ant-layout-content {
+        margin: 8px !important;
+        padding: 16px !important;
+    }
+
+    .kiosk-seat-card {
+        min-height: 240px;
+    }
+
+    .ant-btn {
+        min-height: 44px;
+        font-size: 15px !important;
+    }
+
+    .ant-btn-lg {
+        min-height: 48px;
+        font-size: 16px !important;
+    }
+
+    .ant-modal {
+        max-width: calc(100vw - 32px) !important;
+        margin: 16px !important;
+    }
+
+    .ant-modal-body {
+        padding: 16px !important;
+        max-height: 70vh;
+        overflow-y: auto;
+    }
+
+    .ant-table {
+        font-size: 14px;
+    }
+
+    .ant-table-thead > tr > th,
+    .ant-table-tbody > tr > td {
+        padding: 10px 6px !important;
+        font-size: 13px;
+    }
+
+    .ant-input,
+    .ant-input-affix-wrapper {
+        min-height: 44px !important;
+        font-size: 15px !important;
+    }
+
+    .ant-select-selector {
+        min-height: 44px !important;
+        font-size: 15px !important;
+    }
+}
+
+/* 대형 모니터/키오스크 */
 @media (min-width: 1400px) {
     body {
         font-size: 17px;
@@ -351,5 +448,141 @@ body {
     .ant-btn-lg {
         min-height: 60px;
         font-size: 19px !important;
+    }
+}
+
+/* ========================================
+   Empty State 스타일
+   ======================================== */
+.empty-state {
+    text-align: center;
+    padding: 48px 24px;
+}
+
+.empty-state-icon {
+    font-size: 64px;
+    color: #d9d9d9;
+    margin-bottom: 16px;
+}
+
+.empty-state-text {
+    font-size: 17px;
+    color: #999;
+    margin-bottom: 24px;
+}
+
+.empty-state-action {
+    margin-top: 16px;
+}
+
+/* ========================================
+   모바일 하단 네비게이션
+   ======================================== */
+.mobile-bottom-nav {
+    display: none;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: #fff;
+    border-top: 1px solid #e8e8e8;
+    padding: 8px 0;
+    padding-bottom: env(safe-area-inset-bottom, 8px);
+    z-index: 1000;
+    box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.08);
+}
+
+@media (max-width: 768px) {
+    .mobile-bottom-nav {
+        display: flex;
+        justify-content: space-around;
+        align-items: center;
+    }
+
+    .ant-layout-content {
+        margin-bottom: 80px !important;
+    }
+}
+
+.mobile-nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 16px;
+    cursor: pointer;
+    border-radius: 12px;
+    transition: all 0.2s;
+    min-width: 64px;
+}
+
+.mobile-nav-item:active {
+    transform: scale(0.95);
+    background: #f0f0f0;
+}
+
+.mobile-nav-item .mobile-nav-icon {
+    font-size: 22px;
+    color: #999;
+    margin-bottom: 4px;
+    transition: color 0.2s;
+}
+
+.mobile-nav-item .mobile-nav-label {
+    font-size: 11px;
+    color: #999;
+    font-weight: 500;
+    transition: color 0.2s;
+}
+
+.mobile-nav-item.active .mobile-nav-icon {
+    color: #1890ff;
+}
+
+.mobile-nav-item.active .mobile-nav-label {
+    color: #1890ff;
+    font-weight: 600;
+}
+
+/* ========================================
+   스켈레톤 로딩
+   ======================================== */
+.skeleton {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e8e8e8 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: skeleton-loading 1.5s infinite;
+    border-radius: 8px;
+}
+
+@keyframes skeleton-loading {
+    0% {
+        background-position: 200% 0;
+    }
+    100% {
+        background-position: -200% 0;
+    }
+}
+
+/* ========================================
+   포커스 스타일 (접근성)
+   ======================================== */
+.ant-btn:focus-visible,
+.ant-input:focus-visible,
+.ant-select-selector:focus-visible {
+    outline: 3px solid rgba(24, 144, 255, 0.4) !important;
+    outline-offset: 2px !important;
+}
+
+/* ========================================
+   토스트 메시지 개선
+   ======================================== */
+.ant-message {
+    top: auto !important;
+    bottom: 100px !important;
+}
+
+@media (max-width: 768px) {
+    .ant-message {
+        bottom: 140px !important;
     }
 }
