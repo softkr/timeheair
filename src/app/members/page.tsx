@@ -110,11 +110,11 @@ export default function MembersPage() {
       title: (
         <span style={{ fontSize: 20 }}>
           <DeleteOutlined style={{ color: "#ff4d4f", marginRight: 10 }} />
-          고객 삭제
+          회원 삭제
         </span>
       ),
       content: (
-        <Text style={{ fontSize: 17 }}>정말 이 고객을 삭제하시겠습니까?</Text>
+        <Text style={{ fontSize: 17 }}>정말 이 회원을 삭제하시겠습니까?</Text>
       ),
       okText: "삭제",
       cancelText: "취소",
@@ -131,9 +131,9 @@ export default function MembersPage() {
       onOk: async () => {
         try {
           await deleteMember(id);
-          message.success("고객이 삭제되었습니다");
+          message.success("회원이 삭제되었습니다");
         } catch (error) {
-          message.error("고객 삭제에 실패했습니다");
+          message.error("회원 삭제에 실패했습니다");
           console.error(error);
         }
       },
@@ -147,10 +147,10 @@ export default function MembersPage() {
 
       if (editingMember) {
         await updateMember(editingMember.id, values);
-        message.success("고객 정보가 수정되었습니다");
+        message.success("회원 정보가 수정되었습니다");
       } else {
         await addMember(values);
-        message.success("고객이 등록되었습니다");
+        message.success("회원이 등록되었습니다");
       }
 
       setModalOpen(false);
@@ -303,7 +303,7 @@ export default function MembersPage() {
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             <UserOutlined style={{ fontSize: 28, color: "#1890ff" }} />
             <Title level={3} style={{ margin: 0, fontSize: 26 }}>
-              고객 관리
+              회원 관리
             </Title>
             <Tag color="blue" style={{ fontSize: 15, padding: "6px 14px" }}>
               총 {members.length}명
@@ -323,7 +323,7 @@ export default function MembersPage() {
               borderRadius: 12,
             }}
           >
-            새 고객
+            새 회원
           </Button>
         </Col>
       </Row>
@@ -358,14 +358,14 @@ export default function MembersPage() {
             emptyText: (
               <div className="empty-state">
                 <UserOutlined className="empty-state-icon" />
-                <div className="empty-state-text">등록된 고객이 없습니다</div>
+                <div className="empty-state-text">등록된 회원이 없습니다</div>
                 <Button
                   type="primary"
                   icon={<PlusOutlined />}
                   onClick={handleAdd}
                   style={{ borderRadius: 10 }}
                 >
-                  새 고객 등록하기
+                  새 회원 등록하기
                 </Button>
               </div>
             ),
@@ -374,7 +374,7 @@ export default function MembersPage() {
         />
       </Card>
 
-      {/* 고객 등록/수정 모달 */}
+      {/* 회원 등록/수정 모달 */}
       <Modal
         title={
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -392,7 +392,7 @@ export default function MembersPage() {
               <UserOutlined style={{ fontSize: 20, color: "#fff" }} />
             </div>
             <span style={{ fontSize: 20, fontWeight: 600 }}>
-              {editingMember ? "고객 정보 수정" : "새 고객 등록"}
+              {editingMember ? "회원 정보 수정" : "새 회원 등록"}
             </span>
           </div>
         }
@@ -445,7 +445,7 @@ export default function MembersPage() {
             label={<span style={{ fontSize: 16, fontWeight: 500 }}>이름</span>}
             rules={[{ required: true, message: "이름을 입력해주세요" }]}
           >
-            <Input placeholder="고객 이름" size="large" />
+            <Input placeholder="회원 이름" size="large" />
           </Form.Item>
 
           <Form.Item
