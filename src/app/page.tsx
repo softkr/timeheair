@@ -47,7 +47,12 @@ export default function DashboardPage() {
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
-      await Promise.all([fetchSeats(), fetchReservations(), fetchStaff()]);
+      const today = dayjs().format("YYYY-MM-DD");
+      await Promise.all([
+        fetchSeats(),
+        fetchReservations({ date: today }),
+        fetchStaff(),
+      ]);
       setLoading(false);
     };
     loadData();
