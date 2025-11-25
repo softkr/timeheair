@@ -105,7 +105,7 @@ export function MainLayout({ children }: MainLayoutProps) {
     {
       key: "/members",
       icon: <UserOutlined style={{ fontSize: 24 }} />,
-      label: <span style={{ fontSize: 17, fontWeight: 500 }}>고객</span>,
+      label: <span style={{ fontSize: 17, fontWeight: 500 }}>회원</span>,
     },
     {
       key: "/ledger",
@@ -330,7 +330,7 @@ export function MainLayout({ children }: MainLayoutProps) {
           {[
             { key: "/", icon: <DashboardOutlined />, label: "대시보드" },
             { key: "/reservations", icon: <CalendarOutlined />, label: "예약" },
-            { key: "/members", icon: <UserOutlined />, label: "고객" },
+            { key: "/members", icon: <UserOutlined />, label: "회원" },
             { key: "/ledger", icon: <DollarOutlined />, label: "매출" },
           ].map((item) => (
             <div
