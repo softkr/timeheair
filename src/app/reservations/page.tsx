@@ -361,12 +361,11 @@ export default function ReservationsPage() {
             <Input
               placeholder="고객명/전화번호 검색"
               prefix={
-                <SearchOutlined style={{ fontSize: 18, color: "#999" }} />
+                <SearchOutlined style={{ fontSize: 16, color: "#999" }} />
               }
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
-              size="large"
-              style={{ maxWidth: 300 }}
+              style={{ maxWidth: 250 }}
               allowClear
             />
           </Col>
