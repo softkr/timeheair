@@ -1,294 +1,6 @@
-// API URL 결정: Tauri 환경 감지 및 동적 URL 설정
-const getApiBaseUrl = (): string => {
-  // 1. 환경 변수 우선 (개발용)
-  if (process.env.NEXT_PUBLIC_API_URL) {
-    return process.env.NEXT_PUBLIC_API_URL;
-  }
+import { invoke } from "@tauri-apps/api/core";
 
-  // 2. Tauri 환경 감지 (타입 안전하게)
-  if (
-    typeof window !== "undefined" &&
-    "document" in window &&
-    !("documentMode" in window) &&
-    window.location.protocol === "file:"
-  ) {
-    return "http://localhost:8080/api";
-  }
-
-  // 3. 일반 웹 환경 (개발 서버)
-  if (
-    typeof window !== "undefined" &&
-    window.location.hostname === "localhost"
-  ) {
-    return "http://localhost:8080/api";
-  }
-
-  // 4. 프로덕션 웹 환경 (상대 경로)
-  if (typeof window !== "undefined") {
-    const protocol = window.location.protocol;
-    const host = window.location.host;
-    return `${protocol}//${host}/api`;
-  }
-
-  // 5. fallback
-  return "http://localhost:8080/api";
-};
-
-const API_BASE_URL = getApiBaseUrl();
-
-interface RequestOptions {
-  method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
-  body?: unknown;
-  headers?: Record<string, string>;
-}
-
-class ApiClient {
-  private token: string | null = null;
-
-  setToken(token: string | null) {
-    this.token = token;
-    if (token) {
-      localStorage.setItem("auth_token", token);
-    } else {
-      localStorage.removeItem("auth_token");
-    }
-  }
-
-  getToken(): string | null {
-    if (this.token) return this.token;
-    if (typeof window !== "undefined") {
-      this.token = localStorage.getItem("auth_token");
-    }
-    return this.token;
-  }
-
-  async request<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
-    const { method = "GET", body, headers = {} } = options;
-
-    const token = this.getToken();
-    if (token) {
-      headers["Authorization"] = `Bearer ${token}`;
-    }
-
-    if (body) {
-      headers["Content-Type"] = "application/json";
-    }
-
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-      method,
-      headers,
-      body: body ? JSON.stringify(body) : undefined,
-    });
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ error: "요청 실패" }));
-      throw new Error(error.error || "요청 실패");
-    }
-
-    return response.json();
-  }
-
-  // Auth
-  async login(username: string, password: string) {
-    const response = await this.request<{
-      token: string;
-      user: { id: string; username: string };
-    }>("/auth/login", { method: "POST", body: { username, password } });
-    this.setToken(response.token);
-    return response;
-  }
-
-  logout() {
-    this.setToken(null);
-  }
-
-  async getCurrentUser() {
-    return this.request<{ id: string; username: string }>("/auth/me");
-  }
-
-  // Members
-  async getMembers(search?: string) {
-    const query = search ? `?search=${encodeURIComponent(search)}` : "";
-    return this.request<Member[]>(`/members${query}`);
-  }
-
-  async getMember(id: string) {
-    return this.request<Member>(`/members/${id}`);
-  }
-
-  async searchMemberByPhone(phone: string) {
-    return this.request<Member>(
-      `/members/search?phone=${encodeURIComponent(phone)}`,
-    );
-  }
-
-  async createMember(data: { name: string; phone: string }) {
-    return this.request<Member>("/members", { method: "POST", body: data });
-  }
-
-  async updateMember(id: string, data: { name: string; phone: string }) {
-    return this.request<Member>(`/members/${id}`, {
-      method: "PUT",
-      body: data,
-    });
-  }
-
-  async deleteMember(id: string) {
-    return this.request<{ message: string }>(`/members/${id}`, {
-      method: "DELETE",
-    });
-  }
-
-  async addStamp(id: string) {
-    return this.request<Member>(`/members/${id}/stamp`, { method: "POST" });
-  }
-
-  async resetStamps(id: string) {
-    return this.request<Member>(`/members/${id}/reset-stamps`, {
-      method: "POST",
-    });
-  }
-
-  // Staff
-  async getStaff() {
-    return this.request<Staff[]>("/staff");
-  }
-
-  async createStaff(data: { name: string }) {
-    return this.request<Staff>("/staff", { method: "POST", body: data });
-  }
-
-  async updateStaff(id: string, data: { name: string }) {
-    return this.request<Staff>(`/staff/${id}`, { method: "PUT", body: data });
-  }
-
-  async deleteStaff(id: string) {
-    return this.request<{ message: string }>(`/staff/${id}`, {
-      method: "DELETE",
-    });
-  }
-
-  // Seats
-  async getSeats() {
-    return this.request<Seat[]>("/seats");
-  }
-
-  async getSeat(id: number) {
-    return this.request<Seat>(`/seats/${id}`);
-  }
-
-  async startService(seatId: number, data: StartServiceRequest) {
-    return this.request<Seat>(`/seats/${seatId}/start`, {
-      method: "POST",
-      body: data,
-    });
-  }
-
-  async completeService(seatId: number) {
-    return this.request<{ message: string; ledger: LedgerEntry }>(
-      `/seats/${seatId}/complete`,
-      { method: "POST" },
-    );
-  }
-
-  async cancelService(seatId: number) {
-    return this.request<{ message: string }>(`/seats/${seatId}/cancel`, {
-      method: "POST",
-    });
-  }
-
-  // Reservations
-  async getReservations(params?: {
-    status?: string;
-    date?: string;
-    all?: boolean;
-  }) {
-    const query = new URLSearchParams();
-    if (params?.status) query.set("status", params.status);
-    if (params?.date) query.set("date", params.date);
-    if (params?.all) query.set("all", "true");
-    const queryStr = query.toString();
-    return this.request<Reservation[]>(
-      `/reservations${queryStr ? `?${queryStr}` : ""}`,
-    );
-  }
-
-  async getReservation(id: string) {
-    return this.request<Reservation>(`/reservations/${id}`);
-  }
-
-  async createReservation(data: ReservationRequest) {
-    return this.request<Reservation>("/reservations", {
-      method: "POST",
-      body: data,
-    });
-  }
-
-  async updateReservation(id: string, data: ReservationRequest) {
-    return this.request<Reservation>(`/reservations/${id}`, {
-      method: "PUT",
-      body: data,
-    });
-  }
-
-  async updateReservationStatus(id: string, status: string) {
-    return this.request<Reservation>(`/reservations/${id}/status`, {
-      method: "PATCH",
-      body: { status },
-    });
-  }
-
-  async deleteReservation(id: string) {
-    return this.request<{ message: string }>(`/reservations/${id}`, {
-      method: "DELETE",
-    });
-  }
-
-  // Ledger
-  async getLedgerEntries(params?: {
-    date?: string;
-    startDate?: string;
-    endDate?: string;
-    staffId?: string;
-  }) {
-    const query = new URLSearchParams();
-    if (params?.date) query.set("date", params.date);
-    if (params?.startDate) query.set("startDate", params.startDate);
-    if (params?.endDate) query.set("endDate", params.endDate);
-    if (params?.staffId) query.set("staffId", params.staffId);
-    const queryStr = query.toString();
-    return this.request<LedgerEntry[]>(
-      `/ledger${queryStr ? `?${queryStr}` : ""}`,
-    );
-  }
-
-  async getLedgerSummary(params?: {
-    date?: string;
-    startDate?: string;
-    endDate?: string;
-  }) {
-    const query = new URLSearchParams();
-    if (params?.date) query.set("date", params.date);
-    if (params?.startDate) query.set("startDate", params.startDate);
-    if (params?.endDate) query.set("endDate", params.endDate);
-    const queryStr = query.toString();
-    return this.request<LedgerSummary>(
-      `/ledger/summary${queryStr ? `?${queryStr}` : ""}`,
-    );
-  }
-
-  async getDailySummary(year?: string, month?: string) {
-    const query = new URLSearchParams();
-    if (year) query.set("year", year);
-    if (month) query.set("month", month);
-    const queryStr = query.toString();
-    return this.request<DailySummary[]>(
-      `/ledger/daily${queryStr ? `?${queryStr}` : ""}`,
-    );
-  }
-}
-
-// Types
+// Types - camelCase for frontend usage
 interface Member {
   id: string;
   name: string;
@@ -306,6 +18,10 @@ interface Staff {
 }
 
 interface SelectedService {
+  id?: number;
+  serviceSessionId?: string;
+  reservationId?: string;
+  ledgerEntryId?: string;
   name: string;
   length?: string;
   price: number;
@@ -316,12 +32,14 @@ interface ServiceSession {
   seatId: number;
   memberId?: string;
   memberName: string;
-  services?: SelectedService[];
+  services: SelectedService[];
   totalPrice: number;
   staffId: string;
   staffName: string;
   startTime: string;
   reservationId?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 interface Seat {
@@ -367,11 +85,17 @@ interface LedgerEntry {
 interface StartServiceRequest {
   memberId?: string;
   memberName: string;
-  services: SelectedService[];
+  services: ServiceInput[];
   totalPrice: number;
   staffId: string;
   staffName: string;
   reservationId?: string;
+}
+
+interface ServiceInput {
+  name: string;
+  length?: string;
+  price: number;
 }
 
 interface ReservationRequest {
@@ -381,7 +105,7 @@ interface ReservationRequest {
   seatId?: number;
   staffId: string;
   staffName: string;
-  services: SelectedService[];
+  services: ServiceInput[];
   totalPrice: number;
   reservedAt: string;
   estimatedDuration: number;
@@ -403,6 +127,287 @@ interface DailySummary {
   date: string;
   revenue: number;
   count: number;
+}
+
+interface UserInfo {
+  id: string;
+  username: string;
+  createdAt: string;
+}
+
+interface LoginResponse {
+  token: string;
+  user: UserInfo;
+}
+
+// Helper to convert snake_case to camelCase for frontend compatibility
+function toCamelCase<T>(obj: unknown): T {
+  if (obj === null || obj === undefined) return obj as T;
+  if (Array.isArray(obj)) {
+    return obj.map((item) => toCamelCase(item)) as T;
+  }
+  if (typeof obj === "object") {
+    const newObj: Record<string, unknown> = {};
+    for (const key of Object.keys(obj as object)) {
+      const camelKey = key.replace(/_([a-z])/g, (_, letter) =>
+        letter.toUpperCase(),
+      );
+      newObj[camelKey] = toCamelCase((obj as Record<string, unknown>)[key]);
+    }
+    return newObj as T;
+  }
+  return obj as T;
+}
+
+// Helper to convert camelCase to snake_case for backend
+function toSnakeCase<T>(obj: unknown): T {
+  if (obj === null || obj === undefined) return obj as T;
+  if (Array.isArray(obj)) {
+    return obj.map((item) => toSnakeCase(item)) as T;
+  }
+  if (typeof obj === "object") {
+    const newObj: Record<string, unknown> = {};
+    for (const key of Object.keys(obj as object)) {
+      const snakeKey = key.replace(/([A-Z])/g, "_$1").toLowerCase();
+      newObj[snakeKey] = toSnakeCase((obj as Record<string, unknown>)[key]);
+    }
+    return newObj as T;
+  }
+  return obj as T;
+}
+
+class ApiClient {
+  private token: string | null = null;
+
+  setToken(token: string | null) {
+    this.token = token;
+    if (token) {
+      localStorage.setItem("auth_token", token);
+    } else {
+      localStorage.removeItem("auth_token");
+    }
+  }
+
+  getToken(): string | null {
+    if (this.token) return this.token;
+    if (typeof window !== "undefined") {
+      this.token = localStorage.getItem("auth_token");
+    }
+    return this.token;
+  }
+
+  // Auth
+  async login(username: string, password: string) {
+    const response = await invoke<unknown>("login", {
+      request: { username, password },
+    });
+    const result = toCamelCase<LoginResponse>(response);
+    this.setToken(result.token);
+    return result;
+  }
+
+  logout() {
+    this.setToken(null);
+  }
+
+  async getCurrentUser() {
+    const token = this.getToken();
+    if (!token) throw new Error("인증이 필요합니다");
+    const user = await invoke<unknown>("get_current_user", { token });
+    return toCamelCase<UserInfo>(user);
+  }
+
+  // Members
+  async getMembers(search?: string) {
+    const members = await invoke<unknown>("get_members", {
+      search: search || null,
+    });
+    return toCamelCase<Member[]>(members);
+  }
+
+  async getMember(id: string) {
+    const member = await invoke<unknown>("get_member", { id });
+    return toCamelCase<Member>(member);
+  }
+
+  async searchMemberByPhone(phone: string) {
+    const member = await invoke<unknown>("search_member_by_phone", { phone });
+    return toCamelCase<Member>(member);
+  }
+
+  async createMember(data: { name: string; phone: string }) {
+    const member = await invoke<unknown>("create_member", {
+      request: data,
+    });
+    return toCamelCase<Member>(member);
+  }
+
+  async updateMember(id: string, data: { name: string; phone: string }) {
+    const member = await invoke<unknown>("update_member", {
+      id,
+      request: data,
+    });
+    return toCamelCase<Member>(member);
+  }
+
+  async deleteMember(id: string) {
+    await invoke("delete_member", { id });
+    return { message: "회원이 삭제되었습니다" };
+  }
+
+  async addStamp(id: string) {
+    const member = await invoke<unknown>("add_stamp", { id });
+    return toCamelCase<Member>(member);
+  }
+
+  async resetStamps(id: string) {
+    const member = await invoke<unknown>("reset_stamps", { id });
+    return toCamelCase<Member>(member);
+  }
+
+  // Staff
+  async getStaff() {
+    const staff = await invoke<unknown>("get_staff_list");
+    return toCamelCase<Staff[]>(staff);
+  }
+
+  async createStaff(data: { name: string }) {
+    const staff = await invoke<unknown>("create_staff", {
+      request: data,
+    });
+    return toCamelCase<Staff>(staff);
+  }
+
+  async updateStaff(id: string, data: { name: string }) {
+    const staff = await invoke<unknown>("update_staff", {
+      id,
+      request: data,
+    });
+    return toCamelCase<Staff>(staff);
+  }
+
+  async deleteStaff(id: string) {
+    await invoke("delete_staff", { id });
+    return { message: "직원이 삭제되었습니다" };
+  }
+
+  // Seats
+  async getSeats() {
+    const seats = await invoke<unknown>("get_seats");
+    return toCamelCase<Seat[]>(seats);
+  }
+
+  async getSeat(id: number) {
+    const seat = await invoke<unknown>("get_seat", { id });
+    return toCamelCase<Seat>(seat);
+  }
+
+  async startService(seatId: number, data: StartServiceRequest) {
+    const seat = await invoke<unknown>("start_service", {
+      id: seatId,
+      request: toSnakeCase(data),
+    });
+    return toCamelCase<Seat>(seat);
+  }
+
+  async completeService(seatId: number) {
+    const ledger = await invoke<unknown>("complete_service", {
+      id: seatId,
+    });
+    return {
+      message: "서비스가 완료되었습니다",
+      ledger: toCamelCase<LedgerEntry>(ledger),
+    };
+  }
+
+  async cancelService(seatId: number) {
+    await invoke("cancel_service", { id: seatId });
+    return { message: "서비스가 취소되었습니다" };
+  }
+
+  // Reservations
+  async getReservations(params?: {
+    status?: string;
+    date?: string;
+    all?: boolean;
+  }) {
+    const reservations = await invoke<unknown>("get_reservations", {
+      status: params?.status || null,
+      date: params?.date || null,
+      all: params?.all ? "true" : null,
+    });
+    return toCamelCase<Reservation[]>(reservations);
+  }
+
+  async getReservation(id: string) {
+    const reservation = await invoke<unknown>("get_reservation", { id });
+    return toCamelCase<Reservation>(reservation);
+  }
+
+  async createReservation(data: ReservationRequest) {
+    const reservation = await invoke<unknown>("create_reservation", {
+      request: toSnakeCase(data),
+    });
+    return toCamelCase<Reservation>(reservation);
+  }
+
+  async updateReservation(id: string, data: ReservationRequest) {
+    const reservation = await invoke<unknown>("update_reservation", {
+      id,
+      request: toSnakeCase(data),
+    });
+    return toCamelCase<Reservation>(reservation);
+  }
+
+  async updateReservationStatus(id: string, status: string) {
+    const reservation = await invoke<unknown>("update_reservation_status", {
+      id,
+      request: { status },
+    });
+    return toCamelCase<Reservation>(reservation);
+  }
+
+  async deleteReservation(id: string) {
+    await invoke("delete_reservation", { id });
+    return { message: "예약이 삭제되었습니다" };
+  }
+
+  // Ledger
+  async getLedgerEntries(params?: {
+    date?: string;
+    startDate?: string;
+    endDate?: string;
+    staffId?: string;
+  }) {
+    const entries = await invoke<unknown>("get_ledger_entries", {
+      date: params?.date || null,
+      start_date: params?.startDate || null,
+      end_date: params?.endDate || null,
+      staff_id: params?.staffId || null,
+    });
+    return toCamelCase<LedgerEntry[]>(entries);
+  }
+
+  async getLedgerSummary(params?: {
+    date?: string;
+    startDate?: string;
+    endDate?: string;
+  }) {
+    const summary = await invoke<unknown>("get_ledger_summary", {
+      date: params?.date || null,
+      start_date: params?.startDate || null,
+      end_date: params?.endDate || null,
+    });
+    return toCamelCase<LedgerSummary>(summary);
+  }
+
+  async getDailySummary(year?: string, month?: string) {
+    const summaries = await invoke<unknown>("get_daily_summary", {
+      year: year ? parseInt(year) : null,
+      month: month ? parseInt(month) : null,
+    });
+    return toCamelCase<DailySummary[]>(summaries);
+  }
 }
 
 export const apiClient = new ApiClient();

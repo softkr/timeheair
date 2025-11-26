@@ -34,7 +34,7 @@
       "icons/icon.ico"
     ],
     "externalBin": [],
-    "resources": ["timehair.db", "binaries/*"],
+    "resources": [],
     "windows": {
       "webviewInstallMode": {
         "type": "downloadBootstrapper"
