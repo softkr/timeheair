@@ -40,5 +40,15 @@
         "language": "ko-KR"
       }
     }
+  },
+  "plugins": {
+    "updater": {
+      "active": true,
+      "endpoints": [
+        "https://github.com/softkr/timeheair/releases/latest/download/latest.json"
+      ],
+      "dialog": true,
+      "pubkey": "UPDATER_PUBLIC_KEY_PLACEHOLDER"
+    }
   }
 }
