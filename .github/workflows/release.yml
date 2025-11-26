@@ -32,11 +32,6 @@ jobs:
         with:
           node-version: lts/*
 
-      - name: Setup Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: "1.21"
-
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
         with:
@@ -48,53 +43,8 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
 
-      - name: Install dependencies (Windows only)
-        if: matrix.platform == 'windows-latest'
-        uses: actions/setup-node@v4
-        with:
-          node-version: lts/*
-
       - name: Install frontend dependencies
         run: yarn install
-
-      - name: Build backend binary (macOS)
-        if: matrix.platform == 'macos-latest'
-        run: |
-          cd backend
-          GOOS=darwin GOARCH=${{ contains(matrix.args, 'aarch64') && 'arm64' || 'amd64' }} go build -o timehair-backend main.go
-
-      - name: Build backend binary (Linux)
-        if: matrix.platform == 'ubuntu-22.04'
-        run: |
-          cd backend
-          GOOS=linux GOARCH=amd64 go build -o timehair-backend main.go
-
-      - name: Build backend binary (Windows)
-        if: matrix.platform == 'windows-latest'
-        run: |
-          cd backend
-          go build -ldflags "-s -w" -o timehair-backend.exe main.go
-
-      - name: Copy backend binary to sidecar location (macOS)
-        if: matrix.platform == 'macos-latest'
-        run: |
-          mkdir -p src-tauri/binaries
-          cp backend/timehair-backend src-tauri/binaries/timehair-backend-${{ contains(matrix.args, 'aarch64') && 'aarch64-apple-darwin' || 'x86_64-apple-darwin' }}
-          chmod +x src-tauri/binaries/*
-
-      - name: Copy backend binary to sidecar location (Linux)
-        if: matrix.platform == 'ubuntu-22.04'
-        run: |
-          mkdir -p src-tauri/binaries
-          cp backend/timehair-backend src-tauri/binaries/timehair-backend-x86_64-unknown-linux-gnu
-          chmod +x src-tauri/binaries/*
-
-      - name: Copy backend binary to sidecar location (Windows)
-        if: matrix.platform == 'windows-latest'
-        run: |
-          New-Item -ItemType Directory -Force -Path src-tauri/binaries
-          Copy-Item backend/timehair-backend.exe src-tauri/binaries/timehair-backend-x86_64-pc-windows-msvc.exe
-        shell: pwsh
 
       - uses: tauri-apps/tauri-action@v0
         env:
@@ -107,16 +57,29 @@ jobs:
           releaseBody: |
             ## 타임헤어 v__VERSION__ 릴리스
 
+            ### 🚀 주요 변경사항 (v0.1.5)
+            - **Rust 백엔드 통합**: Go 백엔드를 Rust로 완전히 재구현
+            - **성능 향상**: HTTP → IPC 통신으로 응답 속도 개선
+            - **단일 바이너리**: 별도 서버 프로세스 불필요
+            - **빠른 시작**: 앱 실행 즉시 사용 가능
+
             ### 설치 방법
             - **Windows**: `.msi` 파일 다운로드 후 실행
-            - **macOS**: `.dmg` 파일 다운로드 후 실행
+            - **macOS**: `.dmg` 파일 다운로드 후 실행 (Apple Silicon 및 Intel 지원)
             - **Linux**: `.AppImage` 또는 `.deb` 파일 다운로드
 
             ### 주요 기능
-            - 고객 관리
-            - 예약 관리
+            - 고객 관리 (회원 정보, 스탬프 적립)
+            - 예약 관리 (실시간 좌석 현황)
             - 직원 관리
-            - 대시보드 및 통계
+            - 매출 대시보드 및 통계
+            - 자동 업데이트
+
+            ### 기술 스택
+            - Tauri 2.0 + Rust (백엔드)
+            - Next.js + React + Ant Design (프론트엔드)
+            - SQLite (데이터베이스)
+            - JWT 인증
 
             ### 자동 업데이트
             - 앱 시작 시 자동으로 업데이트 확인
