@@ -1,5 +1,40 @@
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api";
+// API URL 결정: Tauri 환경 감지 및 동적 URL 설정
+const getApiBaseUrl = (): string => {
+  // 1. 환경 변수 우선 (개발용)
+  if (process.env.NEXT_PUBLIC_API_URL) {
+    return process.env.NEXT_PUBLIC_API_URL;
+  }
+
+  // 2. Tauri 환경 감지 (타입 안전하게)
+  if (
+    typeof window !== "undefined" &&
+    "document" in window &&
+    !("documentMode" in window) &&
+    window.location.protocol === "file:"
+  ) {
+    return "http://localhost:8080/api";
+  }
+
+  // 3. 일반 웹 환경 (개발 서버)
+  if (
+    typeof window !== "undefined" &&
+    window.location.hostname === "localhost"
+  ) {
+    return "http://localhost:8080/api";
+  }
+
+  // 4. 프로덕션 웹 환경 (상대 경로)
+  if (typeof window !== "undefined") {
+    const protocol = window.location.protocol;
+    const host = window.location.host;
+    return `${protocol}//${host}/api`;
+  }
+
+  // 5. fallback
+  return "http://localhost:8080/api";
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 interface RequestOptions {
   method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
