@@ -86,8 +86,9 @@ jobs:
       - name: Copy backend binary to sidecar location (Windows)
         if: matrix.platform == 'windows-latest'
         run: |
-          mkdir -p src-tauri/binaries
-          cp backend/timehair-backend.exe src-tauri/binaries/timehair-backend-x86_64-pc-windows-msvc.exe
+          New-Item -ItemType Directory -Force -Path src-tauri/binaries
+          Copy-Item backend/timehair-backend.exe src-tauri/binaries/timehair-backend-x86_64-pc-windows-msvc.exe
+        shell: pwsh
 
       - uses: tauri-apps/tauri-action@v0
         env:
