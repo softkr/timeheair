@@ -13,6 +13,7 @@ import {
 import { useRouter, usePathname } from "next/navigation";
 import { useStore } from "@/lib/store/useStore";
 import Logo from "./Logo";
+import VersionInfo from "./VersionInfo";
 import dayjs from "dayjs";
 import "dayjs/locale/ko";
 
@@ -222,44 +223,53 @@ export function MainLayout({ children }: MainLayoutProps) {
           }}
         />
 
-        {/* 로그아웃 버튼 */}
+        {/* 하단 영역: 버전 정보 + 로그아웃 */}
         <div
           style={{
             position: "absolute",
             bottom: 0,
             width: "100%",
-            padding: 20,
-            borderTop: "1px solid rgba(255,255,255,0.08)",
             background: "rgba(0,0,0,0.1)",
           }}
         >
-          <Button
-            type="text"
-            icon={<LogoutOutlined style={{ fontSize: 20 }} />}
-            onClick={handleLogout}
+          {/* 버전 정보 및 업데이트 */}
+          <VersionInfo />
+
+          {/* 로그아웃 버튼 */}
+          <div
             style={{
-              color: "rgba(255,255,255,0.7)",
-              width: "100%",
-              height: 56,
-              fontSize: 16,
-              borderRadius: 12,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 10,
-              transition: "all 0.2s",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = "rgba(255,255,255,0.1)";
-              e.currentTarget.style.color = "#fff";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = "transparent";
-              e.currentTarget.style.color = "rgba(255,255,255,0.7)";
+              padding: 20,
+              borderTop: "1px solid rgba(255,255,255,0.08)",
             }}
           >
-            로그아웃
-          </Button>
+            <Button
+              type="text"
+              icon={<LogoutOutlined style={{ fontSize: 20 }} />}
+              onClick={handleLogout}
+              style={{
+                color: "rgba(255,255,255,0.7)",
+                width: "100%",
+                height: 56,
+                fontSize: 16,
+                borderRadius: 12,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 10,
+                transition: "all 0.2s",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = "rgba(255,255,255,0.1)";
+                e.currentTarget.style.color = "#fff";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "transparent";
+                e.currentTarget.style.color = "rgba(255,255,255,0.7)";
+              }}
+            >
+              로그아웃
+            </Button>
+          </div>
         </div>
       </Sider>
 
