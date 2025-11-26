@@ -40,13 +40,19 @@ jobs:
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+          targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || (matrix.platform == 'windows-latest' && 'x86_64-pc-windows-msvc') || 'x86_64-unknown-linux-gnu' }}
 
       - name: Install dependencies (Ubuntu only)
         if: matrix.platform == 'ubuntu-22.04'
         run: |
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+
+      - name: Install dependencies (Windows only)
+        if: matrix.platform == 'windows-latest'
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
 
       - name: Install frontend dependencies
         run: yarn install
@@ -67,7 +73,7 @@ jobs:
         if: matrix.platform == 'windows-latest'
         run: |
           cd backend
-          go build -o timehair-backend.exe main.go
+          go build -ldflags "-s -w" -o timehair-backend.exe main.go
 
       - name: Copy backend binary to sidecar location (macOS)
         if: matrix.platform == 'macos-latest'
