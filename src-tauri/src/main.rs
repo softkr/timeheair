@@ -18,17 +18,26 @@ fn main() {
             println!("DB Path: {:?}", db_path);
 
             // 백엔드 sidecar 실행 (DB_PATH 환경변수 설정)
-            let sidecar_command = app
-                .shell()
-                .sidecar("timehair-backend")
-                .unwrap()
-                .env("DB_PATH", db_path.to_string_lossy().to_string());
+            match app.shell().sidecar("timehair-backend") {
+                Ok(sidecar_command) => {
+                    let sidecar_with_env =
+                        sidecar_command.env("DB_PATH", db_path.to_string_lossy().to_string());
 
-            let (mut _rx, mut _child) = sidecar_command
-                .spawn()
-                .expect("Failed to spawn backend sidecar");
-
-            println!("Backend sidecar started successfully");
+                    match sidecar_with_env.spawn() {
+                        Ok((mut _rx, mut _child)) => {
+                            println!("Backend sidecar started successfully");
+                        }
+                        Err(e) => {
+                            eprintln!("Failed to spawn backend sidecar: {:?}", e);
+                            // 백엔드 없이도 프론트엔드는 실행되도록 함
+                        }
+                    }
+                }
+                Err(e) => {
+                    eprintln!("Failed to create sidecar command: {:?}", e);
+                    // 백엔드 없이도 프론트엔드는 실행되도록 함
+                }
+            }
             Ok(())
         })
         .run(tauri::generate_context!())

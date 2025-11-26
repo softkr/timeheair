@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "타임헤어",
+  "productName": "TimeHair",
   "version": "0.1.0",
   "identifier": "com.timehair.app",
   "build": {
@@ -36,6 +36,10 @@
     "externalBin": ["binaries/timehair-backend"],
     "resources": ["timehair.db"],
     "windows": {
+      "webviewInstallMode": {
+        "type": "downloadBootstrapper"
+      },
+      "allowDowngrades": true,
       "wix": {
         "language": "ko-KR"
       }
