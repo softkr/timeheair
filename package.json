@@ -15,6 +15,7 @@
     "@ant-design/charts": "^2.6.6",
     "@ant-design/icons": "^6.1.0",
     "@tauri-apps/api": "^2.9.0",
+    "@tauri-apps/plugin-process": "^2.3.1",
     "@tauri-apps/plugin-updater": "^2.9.0",
     "antd": "^6.0.0",
     "dayjs": "^1.11.19",
