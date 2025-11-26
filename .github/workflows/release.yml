@@ -1,0 +1,88 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  release:
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: 'macos-latest'
+            args: '--target aarch64-apple-darwin'
+          - platform: 'macos-latest'
+            args: '--target x86_64-apple-darwin'
+          - platform: 'ubuntu-22.04'
+            args: ''
+          - platform: 'windows-latest'
+            args: ''
+
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+
+      - name: Install dependencies (Ubuntu only)
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+
+      - name: Install frontend dependencies
+        run: yarn install
+
+      - name: Build backend binary
+        run: |
+          cd backend
+          cargo build --release
+
+      - name: Copy backend binary to sidecar location (macOS/Linux)
+        if: matrix.platform != 'windows-latest'
+        run: |
+          mkdir -p src-tauri/binaries
+          cp backend/target/release/timehair-backend src-tauri/binaries/timehair-backend-${{ matrix.platform == 'macos-latest' && (contains(matrix.args, 'aarch64') && 'aarch64-apple-darwin' || 'x86_64-apple-darwin') || 'x86_64-unknown-linux-gnu' }}
+          chmod +x src-tauri/binaries/*
+
+      - name: Copy backend binary to sidecar location (Windows)
+        if: matrix.platform == 'windows-latest'
+        run: |
+          mkdir -p src-tauri/binaries
+          cp backend/target/release/timehair-backend.exe src-tauri/binaries/timehair-backend-x86_64-pc-windows-msvc.exe
+
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: '타임헤어 v__VERSION__'
+          releaseBody: |
+            ## 타임헤어 v__VERSION__ 릴리스
+
+            ### 설치 방법
+            - **Windows**: `.msi` 파일 다운로드 후 실행
+            - **macOS**: `.dmg` 파일 다운로드 후 실행
+            - **Linux**: `.AppImage` 또는 `.deb` 파일 다운로드
+
+            ### 주요 기능
+            - 고객 관리
+            - 예약 관리
+            - 직원 관리
+            - 대시보드 및 통계
+          releaseDraft: false
+          prerelease: false
+          args: ${{ matrix.args }}
