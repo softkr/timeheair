@@ -230,6 +230,24 @@ fn delete_reservation(id: String) -> Result<(), String> {
     database::delete_reservation(&id).map_err(|e| format!("예약 삭제 실패: {}", e))
 }
 
+// ==================== Backup Commands ====================
+#[tauri::command]
+fn backup_database(path: String) -> Result<(), String> {
+    database::backup_database(&path)
+}
+
+#[tauri::command]
+fn restore_database(path: String) -> Result<(), String> {
+    database::restore_database(&path)
+}
+
+#[tauri::command]
+fn get_db_path() -> Result<String, String> {
+    database::get_db_path()
+        .map(|p| p.to_string_lossy().to_string())
+        .ok_or("DB 경로를 찾을 수 없습니다".to_string())
+}
+
 // ==================== Ledger Commands ====================
 #[tauri::command]
 fn get_ledger_entries(
@@ -274,6 +292,7 @@ fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_dialog::init())
         .setup(|app| {
             // Initialize database
             let app_data_dir = app
@@ -325,6 +344,10 @@ fn main() {
             get_ledger_entries,
             get_ledger_summary,
             get_daily_summary,
+            // Backup
+            backup_database,
+            restore_database,
+            get_db_path,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

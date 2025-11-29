@@ -286,11 +286,6 @@ pub struct DailySummary {
 
 // ==================== Query Parameters ====================
 #[derive(Debug, Deserialize, Default)]
-pub struct MemberQuery {
-    pub search: Option<String>,
-}
-
-#[derive(Debug, Deserialize, Default)]
 pub struct ReservationQuery {
     pub status: Option<String>,
     pub date: Option<String>,
@@ -303,10 +298,4 @@ pub struct LedgerQuery {
     pub start_date: Option<String>,
     pub end_date: Option<String>,
     pub staff_id: Option<String>,
-}
-
-#[derive(Debug, Deserialize, Default)]
-pub struct DailySummaryQuery {
-    pub year: Option<i32>,
-    pub month: Option<u32>,
 }

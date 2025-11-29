@@ -14,6 +14,7 @@ import { useRouter, usePathname } from "next/navigation";
 import { useStore } from "@/lib/store/useStore";
 import Logo from "./Logo";
 import VersionInfo from "./VersionInfo";
+import BackupRestore from "./BackupRestore";
 import dayjs from "dayjs";
 import "dayjs/locale/ko";
 
@@ -232,6 +233,9 @@ export function MainLayout({ children }: MainLayoutProps) {
             background: "rgba(0,0,0,0.1)",
           }}
         >
+          {/* 데이터 백업/복원 */}
+          <BackupRestore />
+
           {/* 버전 정보 및 업데이트 */}
           <VersionInfo />
 

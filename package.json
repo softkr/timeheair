@@ -1,6 +1,6 @@
 {
   "name": "timehair",
-  "version": "0.1.5",
+  "version": "1.0.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -17,6 +17,7 @@
     "@tauri-apps/api": "^2.9.0",
     "@tauri-apps/plugin-process": "^2.3.1",
     "@tauri-apps/plugin-updater": "^2.9.0",
+    "@tauri-apps/plugin-dialog": "^2",
     "antd": "^6.0.0",
     "dayjs": "^1.11.19",
     "next": "^14.0.0",

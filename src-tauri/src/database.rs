@@ -8,10 +8,13 @@ use uuid::Uuid;
 use crate::models::*;
 
 static DB: OnceCell<Mutex<Connection>> = OnceCell::new();
+static DB_PATH: OnceCell<PathBuf> = OnceCell::new();
 
 pub fn init_database(app_data_dir: PathBuf) -> Result<()> {
     std::fs::create_dir_all(&app_data_dir).ok();
     let db_path = app_data_dir.join("timehair.db");
+
+    DB_PATH.set(db_path.clone()).ok();
 
     let conn = Connection::open(&db_path)?;
 
@@ -25,6 +28,56 @@ pub fn init_database(app_data_dir: PathBuf) -> Result<()> {
     seed_data(&conn)?;
 
     DB.set(Mutex::new(conn)).ok();
+
+    Ok(())
+}
+
+pub fn get_db_path() -> Option<PathBuf> {
+    DB_PATH.get().cloned()
+}
+
+pub fn backup_database(backup_path: &str) -> std::result::Result<(), String> {
+    let db_path = get_db_path().ok_or("DB 경로를 찾을 수 없습니다")?;
+
+    // Ensure all writes are flushed
+    {
+        let conn = get_db().lock();
+        conn.execute("PRAGMA wal_checkpoint(FULL)", [])
+            .map_err(|e| format!("WAL checkpoint 실패: {}", e))?;
+    }
+
+    std::fs::copy(&db_path, backup_path).map_err(|e| format!("백업 실패: {}", e))?;
+
+    Ok(())
+}
+
+pub fn restore_database(backup_path: &str) -> std::result::Result<(), String> {
+    let db_path = get_db_path().ok_or("DB 경로를 찾을 수 없습니다")?;
+
+    // Verify backup file exists
+    if !std::path::Path::new(backup_path).exists() {
+        return Err("백업 파일이 존재하지 않습니다".to_string());
+    }
+
+    // Verify it's a valid SQLite file
+    let backup_conn =
+        Connection::open(backup_path).map_err(|e| format!("유효하지 않은 백업 파일: {}", e))?;
+
+    // Check if it has our tables
+    let table_count: i32 = backup_conn.query_row(
+        "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name IN ('users', 'members', 'staff', 'seats')",
+        [],
+        |row| row.get(0),
+    ).map_err(|e| format!("백업 파일 검증 실패: {}", e))?;
+
+    if table_count < 4 {
+        return Err("유효하지 않은 TimeHair 백업 파일입니다".to_string());
+    }
+
+    drop(backup_conn);
+
+    // Copy backup to DB location
+    std::fs::copy(backup_path, &db_path).map_err(|e| format!("복원 실패: {}", e))?;
 
     Ok(())
 }
@@ -524,15 +577,13 @@ pub fn get_seats() -> Vec<Seat> {
     // Load current sessions for each seat
     seat_ids
         .into_iter()
-        .map(|(id, name, status, created_at, updated_at)| {
-            Seat {
-                id,
-                name,
-                status: SeatStatus::from_str(&status),
-                current_session: get_session_by_seat_id(id),
-                created_at: created_at.parse().unwrap_or_default(),
-                updated_at: updated_at.parse().unwrap_or_default(),
-            }
+        .map(|(id, name, status, created_at, updated_at)| Seat {
+            id,
+            name,
+            status: SeatStatus::from_str(&status),
+            current_session: get_session_by_seat_id(id),
+            created_at: created_at.parse().unwrap_or_default(),
+            updated_at: updated_at.parse().unwrap_or_default(),
         })
         .collect()
 }
@@ -555,15 +606,13 @@ pub fn get_seat_by_id(id: i32) -> Option<Seat> {
         ).ok()
     };
 
-    seat_data.map(|(id, name, status, created_at, updated_at)| {
-        Seat {
-            id,
-            name,
-            status: SeatStatus::from_str(&status),
-            current_session: get_session_by_seat_id(id),
-            created_at: created_at.parse().unwrap_or_default(),
-            updated_at: updated_at.parse().unwrap_or_default(),
-        }
+    seat_data.map(|(id, name, status, created_at, updated_at)| Seat {
+        id,
+        name,
+        status: SeatStatus::from_str(&status),
+        current_session: get_session_by_seat_id(id),
+        created_at: created_at.parse().unwrap_or_default(),
+        updated_at: updated_at.parse().unwrap_or_default(),
     })
 }
 
@@ -579,7 +628,19 @@ pub fn update_seat_status(id: i32, status: SeatStatus) -> Result<()> {
 
 // ==================== Service Session Operations ====================
 pub fn get_session_by_seat_id(seat_id: i32) -> Option<ServiceSession> {
-    let session_data: Option<(String, i32, Option<String>, String, i32, String, String, String, Option<String>, String, String)> = {
+    let session_data: Option<(
+        String,
+        i32,
+        Option<String>,
+        String,
+        i32,
+        String,
+        String,
+        String,
+        Option<String>,
+        String,
+        String,
+    )> = {
         let conn = get_db().lock();
         conn.query_row(
             "SELECT id, seat_id, member_id, member_name, total_price, staff_id, staff_name, start_time, reservation_id, created_at, updated_at
@@ -603,23 +664,37 @@ pub fn get_session_by_seat_id(seat_id: i32) -> Option<ServiceSession> {
         ).ok()
     };
 
-    session_data.map(|(id, seat_id, member_id, member_name, total_price, staff_id, staff_name, start_time, reservation_id, created_at, updated_at)| {
-        let services = get_services_by_session_id(&id);
-        ServiceSession {
+    session_data.map(
+        |(
             id,
             seat_id,
             member_id,
             member_name,
-            services,
             total_price,
             staff_id,
             staff_name,
-            start_time: start_time.parse().unwrap_or_default(),
+            start_time,
             reservation_id,
-            created_at: created_at.parse().unwrap_or_default(),
-            updated_at: updated_at.parse().unwrap_or_default(),
-        }
-    })
+            created_at,
+            updated_at,
+        )| {
+            let services = get_services_by_session_id(&id);
+            ServiceSession {
+                id,
+                seat_id,
+                member_id,
+                member_name,
+                services,
+                total_price,
+                staff_id,
+                staff_name,
+                start_time: start_time.parse().unwrap_or_default(),
+                reservation_id,
+                created_at: created_at.parse().unwrap_or_default(),
+                updated_at: updated_at.parse().unwrap_or_default(),
+            }
+        },
+    )
 }
 
 pub fn create_session(
@@ -713,9 +788,7 @@ pub fn get_reservations(query: &ReservationQuery) -> Vec<Reservation> {
     let reservation_ids: Vec<String> = {
         let conn = get_db().lock();
 
-        let mut sql = String::from(
-            "SELECT id FROM reservations WHERE deleted_at IS NULL"
-        );
+        let mut sql = String::from("SELECT id FROM reservations WHERE deleted_at IS NULL");
 
         let mut params: Vec<String> = vec![];
 
@@ -736,9 +809,21 @@ pub fn get_reservations(query: &ReservationQuery) -> Vec<Reservation> {
         let mut stmt = conn.prepare(&sql).unwrap();
 
         match params.len() {
-            0 => stmt.query_map([], |row| row.get::<_, String>(0)).unwrap().filter_map(|r| r.ok()).collect(),
-            1 => stmt.query_map([&params[0]], |row| row.get::<_, String>(0)).unwrap().filter_map(|r| r.ok()).collect(),
-            2 => stmt.query_map([&params[0], &params[1]], |row| row.get::<_, String>(0)).unwrap().filter_map(|r| r.ok()).collect(),
+            0 => stmt
+                .query_map([], |row| row.get::<_, String>(0))
+                .unwrap()
+                .filter_map(|r| r.ok())
+                .collect(),
+            1 => stmt
+                .query_map([&params[0]], |row| row.get::<_, String>(0))
+                .unwrap()
+                .filter_map(|r| r.ok())
+                .collect(),
+            2 => stmt
+                .query_map([&params[0], &params[1]], |row| row.get::<_, String>(0))
+                .unwrap()
+                .filter_map(|r| r.ok())
+                .collect(),
             _ => vec![],
         }
     };
@@ -870,7 +955,10 @@ pub fn update_reservation(id: &str, req: &UpdateReservationRequest) -> Result<Re
         )?;
 
         // Delete old services and insert new ones
-        conn.execute("DELETE FROM selected_services WHERE reservation_id = ?1", [id])?;
+        conn.execute(
+            "DELETE FROM selected_services WHERE reservation_id = ?1",
+            [id],
+        )?;
 
         for service in &req.services {
             conn.execute(
@@ -902,7 +990,10 @@ pub fn delete_reservation(id: &str) -> Result<()> {
     let now = Utc::now().to_rfc3339();
 
     // Delete services
-    conn.execute("DELETE FROM selected_services WHERE reservation_id = ?1", [id])?;
+    conn.execute(
+        "DELETE FROM selected_services WHERE reservation_id = ?1",
+        [id],
+    )?;
 
     // Soft delete reservation
     conn.execute(
@@ -941,10 +1032,28 @@ pub fn get_ledger_entries(query: &LedgerQuery) -> Vec<LedgerEntry> {
         let mut stmt = conn.prepare(&sql).unwrap();
 
         match params.len() {
-            0 => stmt.query_map([], |row| row.get::<_, String>(0)).unwrap().filter_map(|r| r.ok()).collect(),
-            1 => stmt.query_map([&params[0]], |row| row.get::<_, String>(0)).unwrap().filter_map(|r| r.ok()).collect(),
-            2 => stmt.query_map([&params[0], &params[1]], |row| row.get::<_, String>(0)).unwrap().filter_map(|r| r.ok()).collect(),
-            3 => stmt.query_map([&params[0], &params[1], &params[2]], |row| row.get::<_, String>(0)).unwrap().filter_map(|r| r.ok()).collect(),
+            0 => stmt
+                .query_map([], |row| row.get::<_, String>(0))
+                .unwrap()
+                .filter_map(|r| r.ok())
+                .collect(),
+            1 => stmt
+                .query_map([&params[0]], |row| row.get::<_, String>(0))
+                .unwrap()
+                .filter_map(|r| r.ok())
+                .collect(),
+            2 => stmt
+                .query_map([&params[0], &params[1]], |row| row.get::<_, String>(0))
+                .unwrap()
+                .filter_map(|r| r.ok())
+                .collect(),
+            3 => stmt
+                .query_map([&params[0], &params[1], &params[2]], |row| {
+                    row.get::<_, String>(0)
+                })
+                .unwrap()
+                .filter_map(|r| r.ok())
+                .collect(),
             _ => vec![],
         }
     };
