@@ -1,6 +1,6 @@
 {
   "name": "timehair",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -9,30 +9,33 @@
     "lint": "next lint",
     "tauri": "tauri",
     "tauri:dev": "tauri dev",
-    "tauri:build": "tauri build"
+    "tauri:build": "tauri build",
+    "version:patch": "node bump-version.js patch",
+    "version:minor": "node bump-version.js minor",
+    "version:major": "node bump-version.js major"
   },
   "dependencies": {
     "@ant-design/charts": "^2.6.6",
     "@ant-design/icons": "^6.1.0",
-    "@tauri-apps/api": "^2.9.0",
+    "@tauri-apps/api": "^2.9.1",
     "@tauri-apps/plugin-process": "^2.3.1",
     "@tauri-apps/plugin-updater": "^2.9.0",
     "@tauri-apps/plugin-dialog": "^2",
-    "antd": "^6.0.0",
+    "antd": "^6.0.1",
     "dayjs": "^1.11.19",
-    "next": "^14.0.0",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "zustand": "^5.0.8"
+    "next": "^16.0.7",
+    "react": "^19.2.1",
+    "react-dom": "^19.2.1",
+    "zustand": "^5.0.9"
   },
   "devDependencies": {
-    "@tauri-apps/cli": "^2.9.4",
-    "@types/node": "^20.0.0",
-    "@types/react": "^18.2.0",
-    "@types/react-dom": "^18.2.0",
-    "eslint": "^8.0.0",
-    "eslint-config-next": "^14.0.0",
+    "@tauri-apps/cli": "^2.9.5",
+    "@types/node": "^24.10.1",
+    "@types/react": "^19.2.7",
+    "@types/react-dom": "^19.2.3",
+    "eslint": "^9.39.1",
+    "eslint-config-next": "^16.0.7",
     "png-to-ico": "^3.0.1",
-    "typescript": "^5.0.0"
+    "typescript": "^5.9.3"
   }
 }
