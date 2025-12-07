@@ -116,4 +116,5 @@ jobs:
             - 새 버전 발견 시 자동 다운로드 및 설치 가능
           releaseDraft: false
           prerelease: false
+          includeUpdaterJson: true
           args: ${{ matrix.args }}
