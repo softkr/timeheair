@@ -230,7 +230,7 @@ fn seed_data(conn: &Connection) -> Result<()> {
     if user_count == 0 {
         // Create default admin user
         let password_hash =
-            bcrypt::hash("admin", bcrypt::DEFAULT_COST).expect("Failed to hash password");
+            bcrypt::hash("12344321", bcrypt::DEFAULT_COST).expect("Failed to hash password");
 
         conn.execute(
             "INSERT INTO users (id, username, password, created_at, updated_at) VALUES (?1, ?2, ?3, ?4, ?5)",

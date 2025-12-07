@@ -263,541 +263,550 @@ export function StartServiceModal({
       width={900}
       styles={{ body: { padding: "24px" } }}
     >
-      <Form form={form} layout="vertical">
-        {/* 회원 유형 선택 */}
-        <div style={{ marginBottom: 16 }}>
-          <Text
-            style={{
-              fontSize: 16,
-              fontWeight: 500,
-              marginBottom: 8,
-              display: "block",
-            }}
-          >
-            회원 유형
-          </Text>
-          <Row gutter={12}>
-            <Col span={8}>
-              <Button
-                block
-                type={customerType === "reservation" ? "primary" : "default"}
-                onClick={() => handleCustomerTypeChange("reservation")}
-                icon={<CalendarOutlined />}
-                size="large"
-                style={{
-                  height: 52,
-                  borderRadius: 12,
-                  fontSize: 16,
-                }}
-                disabled={todayReservations.length === 0}
-              >
-                예약 손님{" "}
-                {todayReservations.length > 0 &&
-                  `(${todayReservations.length})`}
-              </Button>
-            </Col>
-            <Col span={8}>
-              <Button
-                block
-                type={customerType === "member" ? "primary" : "default"}
-                onClick={() => handleCustomerTypeChange("member")}
-                icon={<UserOutlined />}
-                size="large"
-                style={{
-                  height: 52,
-                  borderRadius: 12,
-                  fontSize: 16,
-                }}
-              >
-                회원
-              </Button>
-            </Col>
-            <Col span={8}>
-              <Button
-                block
-                type={customerType === "guest" ? "primary" : "default"}
-                onClick={() => handleCustomerTypeChange("guest")}
-                size="large"
-                style={{
-                  height: 52,
-                  borderRadius: 12,
-                  fontSize: 16,
-                }}
-              >
-                일반 손님
-              </Button>
-            </Col>
-          </Row>
-        </div>
-
-        {/* 고객 및 담당자 선택 */}
-        <Row gutter={20}>
-          <Col span={12}>
-            {customerType === "reservation" && (
-              <Form.Item
-                label={
-                  <span style={{ fontSize: 16, fontWeight: 500 }}>
-                    <CalendarOutlined style={{ marginRight: 8 }} />
-                    예약 선택
-                  </span>
-                }
-                style={{ marginBottom: 16 }}
-              >
-                <Select
-                  placeholder="예약 손님 선택"
-                  size="large"
-                  style={{ width: "100%" }}
-                  allowClear
-                  value={selectedReservationId}
-                  onChange={handleReservationSelect}
-                >
-                  {todayReservations.map((r) => (
-                    <Select.Option key={r.id} value={r.id}>
-                      <div
-                        style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "center",
-                        }}
-                      >
-                        <span>
-                          <Tag color="blue">
-                            {dayjs(r.reservedAt).format("HH:mm")}
-                          </Tag>
-                          {r.memberName || "손님(예약)"}
-                        </span>
-                        <Text type="secondary" style={{ fontSize: 13 }}>
-                          {r.staffName}
-                        </Text>
-                      </div>
-                    </Select.Option>
-                  ))}
-                </Select>
-                {selectedReservation && (
-                  <div
-                    style={{
-                      marginTop: 8,
-                      padding: "8px 12px",
-                      background: "#e6f7ff",
-                      borderRadius: 8,
-                    }}
-                  >
-                    <Text style={{ fontSize: 14 }}>
-                      서비스:{" "}
-                      {selectedReservation.services
-                        ?.map((s) => s.name)
-                        .join(", ") || "-"}
-                    </Text>
-                    <br />
-                    <Text style={{ fontSize: 14 }}>
-                      금액:{" "}
-                      <strong>
-                        {formatPrice(selectedReservation.totalPrice)}
-                      </strong>
-                    </Text>
-                  </div>
-                )}
-              </Form.Item>
-            )}
-
-            {customerType === "member" && (
-              <Form.Item
-                label={
-                  <span style={{ fontSize: 16, fontWeight: 500 }}>
-                    <UserOutlined style={{ marginRight: 8 }} />
-                    회원 선택
-                  </span>
-                }
-                style={{ marginBottom: 16 }}
-              >
-                <Select
-                  placeholder="회원 검색"
-                  size="large"
-                  style={{ width: "100%" }}
-                  allowClear
-                  showSearch
-                  optionFilterProp="children"
-                  value={selectedMemberId}
-                  onChange={handleMemberSelect}
-                >
-                  {members.map((m) => (
-                    <Select.Option key={m.id} value={m.id}>
-                      <div
-                        style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "center",
-                        }}
-                      >
-                        <span>
-                          {m.name} <Text type="secondary">({m.phone})</Text>
-                        </span>
-                        {(m.stamps || 0) >= 10 && (
-                          <Tag color="green" style={{ marginLeft: 8 }}>
-                            혜택가능
-                          </Tag>
-                        )}
-                      </div>
-                    </Select.Option>
-                  ))}
-                </Select>
-                {selectedMember && (
-                  <div
-                    style={{
-                      marginTop: 8,
-                      padding: "8px 12px",
-                      background: "#f0f5ff",
-                      borderRadius: 8,
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                    }}
-                  >
-                    <Text style={{ fontSize: 14 }}>
-                      스탬프: <strong>{selectedMember.stamps || 0}/10</strong>
-                    </Text>
-                    {(selectedMember.stamps || 0) >= 10 && (
-                      <Tag color="green">혜택 적용 가능</Tag>
-                    )}
-                  </div>
-                )}
-              </Form.Item>
-            )}
-
-            <Form.Item name="memberName" hidden>
-              <Input />
-            </Form.Item>
-          </Col>
-          <Col span={12}>
-            <Form.Item
-              name="staffId"
-              label={
-                <span style={{ fontSize: 16, fontWeight: 500 }}>
-                  <TeamOutlined style={{ marginRight: 8 }} />
-                  담당자
-                </span>
-              }
-              rules={[{ required: true, message: "담당자를 선택해주세요" }]}
-              style={{ marginBottom: 16 }}
+        <Form form={form} layout="vertical">
+          {/* 회원 유형 선택 */}
+          <div style={{ marginBottom: 16 }}>
+            <Text
+              style={{
+                fontSize: 16,
+                fontWeight: 500,
+                marginBottom: 8,
+                display: "block",
+              }}
             >
-              <Select placeholder="담당자 선택" size="large">
-                {staff.map((s) => (
-                  <Select.Option key={s.id} value={s.id}>
-                    <Text style={{ fontSize: 16 }}>{s.name}</Text>
-                  </Select.Option>
-                ))}
-              </Select>
-            </Form.Item>
-          </Col>
-        </Row>
-
-        <Divider style={{ margin: "16px 0" }}>
-          <Text style={{ fontSize: 16, fontWeight: 500 }}>서비스 선택</Text>
-        </Divider>
-
-        {/* 카테고리 탭 */}
-        <div style={{ marginBottom: 16 }}>
-          <Row gutter={[12, 12]}>
-            {serviceCategories.map((cat) => (
-              <Col key={cat}>
+              회원 유형
+            </Text>
+            <Row gutter={12}>
+              <Col span={8}>
                 <Button
-                  type={selectedCategory === cat ? "primary" : "default"}
-                  onClick={() => setSelectedCategory(cat)}
+                  block
+                  type={customerType === "reservation" ? "primary" : "default"}
+                  onClick={() => handleCustomerTypeChange("reservation")}
+                  icon={<CalendarOutlined />}
                   size="large"
                   style={{
                     height: 52,
-                    paddingInline: 24,
                     borderRadius: 12,
                     fontSize: 16,
-                    fontWeight: selectedCategory === cat ? 600 : 400,
                   }}
+                  disabled={todayReservations.length === 0}
                 >
-                  {cat}
+                  예약 손님{" "}
+                  {todayReservations.length > 0 &&
+                    `(${todayReservations.length})`}
                 </Button>
               </Col>
-            ))}
-          </Row>
-        </div>
+              <Col span={8}>
+                <Button
+                  block
+                  type={customerType === "member" ? "primary" : "default"}
+                  onClick={() => handleCustomerTypeChange("member")}
+                  icon={<UserOutlined />}
+                  size="large"
+                  style={{
+                    height: 52,
+                    borderRadius: 12,
+                    fontSize: 16,
+                  }}
+                >
+                  회원
+                </Button>
+              </Col>
+              <Col span={8}>
+                <Button
+                  block
+                  type={customerType === "guest" ? "primary" : "default"}
+                  onClick={() => handleCustomerTypeChange("guest")}
+                  size="large"
+                  style={{
+                    height: 52,
+                    borderRadius: 12,
+                    fontSize: 16,
+                  }}
+                >
+                  일반 손님
+                </Button>
+              </Col>
+            </Row>
+          </div>
 
-        {/* 서비스 목록 */}
-        <div
-          style={{
-            maxHeight: 280,
-            overflowY: "auto",
-            marginBottom: 16,
-            background: "#fafafa",
-            borderRadius: 16,
-            padding: 16,
-          }}
-        >
-          <Row gutter={[12, 12]}>
-            {filteredMenus.map((menu) => (
-              <Col key={menu.id} span={12}>
-                {menu.price ? (
-                  <Button
-                    block
+          {/* 고객 및 담당자 선택 */}
+          <Row gutter={20}>
+            <Col span={12}>
+              {customerType === "reservation" && (
+                <Form.Item
+                  label={
+                    <span style={{ fontSize: 16, fontWeight: 500 }}>
+                      <CalendarOutlined style={{ marginRight: 8 }} />
+                      예약 선택
+                    </span>
+                  }
+                  style={{ marginBottom: 16 }}
+                >
+                  <Select
+                    placeholder="예약 손님 선택"
                     size="large"
-                    onClick={() => handleAddService(menu)}
+                    style={{ width: "100%" }}
+                    allowClear
+                    value={selectedReservationId}
+                    onChange={handleReservationSelect}
+                  >
+                    {todayReservations.map((r) => (
+                      <Select.Option key={r.id} value={r.id}>
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                          }}
+                        >
+                          <span>
+                            <Tag color="blue">
+                              {dayjs(r.reservedAt).format("HH:mm")}
+                            </Tag>
+                            {r.memberName || "손님(예약)"}
+                          </span>
+                          <Text type="secondary" style={{ fontSize: 13 }}>
+                            {r.staffName}
+                          </Text>
+                        </div>
+                      </Select.Option>
+                    ))}
+                  </Select>
+                  {selectedReservation && (
+                    <div
+                      style={{
+                        marginTop: 8,
+                        padding: "8px 12px",
+                        background: "#e6f7ff",
+                        borderRadius: 8,
+                      }}
+                    >
+                      <Text style={{ fontSize: 14 }}>
+                        서비스:{" "}
+                        {selectedReservation.services
+                          ?.map((s) => s.name)
+                          .join(", ") || "-"}
+                      </Text>
+                      <br />
+                      <Text style={{ fontSize: 14 }}>
+                        금액:{" "}
+                        <strong>
+                          {formatPrice(selectedReservation.totalPrice)}
+                        </strong>
+                      </Text>
+                    </div>
+                  )}
+                </Form.Item>
+              )}
+
+              {customerType === "member" && (
+                <Form.Item
+                  label={
+                    <span style={{ fontSize: 16, fontWeight: 500 }}>
+                      <UserOutlined style={{ marginRight: 8 }} />
+                      회원 선택
+                    </span>
+                  }
+                  style={{ marginBottom: 16 }}
+                >
+                  <Select
+                    placeholder="회원 검색"
+                    size="large"
+                    style={{ width: "100%" }}
+                    allowClear
+                    showSearch
+                    optionFilterProp="children"
+                    value={selectedMemberId}
+                    onChange={handleMemberSelect}
+                  >
+                    {members.map((m) => (
+                      <Select.Option key={m.id} value={m.id}>
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                          }}
+                        >
+                          <span>
+                            {m.name} <Text type="secondary">({m.phone})</Text>
+                          </span>
+                          {(m.stamps || 0) >= 10 && (
+                            <Tag color="green" style={{ marginLeft: 8 }}>
+                              혜택가능
+                            </Tag>
+                          )}
+                        </div>
+                      </Select.Option>
+                    ))}
+                  </Select>
+                  {selectedMember && (
+                    <div
+                      style={{
+                        marginTop: 8,
+                        padding: "8px 12px",
+                        background: "#f0f5ff",
+                        borderRadius: 8,
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                      }}
+                    >
+                      <Text style={{ fontSize: 14 }}>
+                        스탬프: <strong>{selectedMember.stamps || 0}/10</strong>
+                      </Text>
+                      {(selectedMember.stamps || 0) >= 10 && (
+                        <Tag color="green">혜택 적용 가능</Tag>
+                      )}
+                    </div>
+                  )}
+                </Form.Item>
+              )}
+
+              <Form.Item name="memberName" hidden>
+                <Input />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                name="staffId"
+                label={
+                  <span style={{ fontSize: 16, fontWeight: 500 }}>
+                    <TeamOutlined style={{ marginRight: 8 }} />
+                    담당자
+                  </span>
+                }
+                rules={[{ required: true, message: "담당자를 선택해주세요" }]}
+                style={{ marginBottom: 16 }}
+              >
+                <Select placeholder="담당자 선택" size="large">
+                  {staff.map((s) => (
+                    <Select.Option key={s.id} value={s.id}>
+                      <Text style={{ fontSize: 16 }}>{s.name}</Text>
+                    </Select.Option>
+                  ))}
+                </Select>
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Divider style={{ margin: "16px 0" }}>
+            <Text style={{ fontSize: 16, fontWeight: 500 }}>서비스 선택</Text>
+          </Divider>
+
+          {/* 카테고리 탭 */}
+          <div style={{ marginBottom: 16 }}>
+            <Row gutter={[12, 12]}>
+              {serviceCategories.map((cat) => (
+                <Col key={cat}>
+                  <Button
+                    type={selectedCategory === cat ? "primary" : "default"}
+                    onClick={() => setSelectedCategory(cat)}
+                    size="large"
                     style={{
-                      height: 64,
-                      textAlign: "left",
+                      height: 52,
+                      paddingInline: 24,
+                      borderRadius: 12,
+                      fontSize: 16,
+                      fontWeight: selectedCategory === cat ? 600 : 400,
+                    }}
+                  >
+                    {cat}
+                  </Button>
+                </Col>
+              ))}
+            </Row>
+          </div>
+
+          {/* 서비스 목록 */}
+          <div
+            style={{
+              maxHeight: 280,
+              overflowY: "auto",
+              marginBottom: 16,
+              background: "#fafafa",
+              borderRadius: 16,
+              padding: 16,
+            }}
+          >
+            <Row gutter={[12, 12]}>
+              {filteredMenus.map((menu) => (
+                <Col key={menu.id} span={12}>
+                  {menu.price ? (
+                    <Button
+                      block
+                      size="large"
+                      onClick={() => handleAddService(menu)}
+                      style={{
+                        height: 64,
+                        textAlign: "left",
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        borderRadius: 12,
+                        padding: "0 20px",
+                        background: "#fff",
+                        border: "2px solid #e8e8e8",
+                      }}
+                    >
+                      <span style={{ fontSize: 17, fontWeight: 500 }}>
+                        {menu.name}
+                      </span>
+                      <span
+                        style={{
+                          color: "#1890ff",
+                          fontSize: 17,
+                          fontWeight: 600,
+                        }}
+                      >
+                        {formatPrice(menu.price)}
+                      </span>
+                    </Button>
+                  ) : (
+                    <Card
+                      size="small"
+                      style={{
+                        borderRadius: 12,
+                        border: "2px solid #e8e8e8",
+                      }}
+                      styles={{ body: { padding: 16 } }}
+                    >
+                      <div
+                        style={{
+                          fontWeight: 600,
+                          marginBottom: 12,
+                          fontSize: 17,
+                        }}
+                      >
+                        {menu.name}
+                      </div>
+                      <Row gutter={8}>
+                        <Col span={8}>
+                          <Button
+                            block
+                            onClick={() => handleAddService(menu, "short")}
+                            style={{
+                              height: 56,
+                              borderRadius: 10,
+                              display: "flex",
+                              flexDirection: "column",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              padding: 8,
+                            }}
+                          >
+                            <span style={{ fontWeight: 600 }}>숏</span>
+                            <span style={{ fontSize: 13, color: "#1890ff" }}>
+                              {menu.prices?.short &&
+                                formatPrice(menu.prices.short)}
+                            </span>
+                          </Button>
+                        </Col>
+                        <Col span={8}>
+                          <Button
+                            block
+                            onClick={() => handleAddService(menu, "medium")}
+                            style={{
+                              height: 56,
+                              borderRadius: 10,
+                              display: "flex",
+                              flexDirection: "column",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              padding: 8,
+                            }}
+                          >
+                            <span style={{ fontWeight: 600 }}>미듐</span>
+                            <span style={{ fontSize: 13, color: "#1890ff" }}>
+                              {menu.prices?.medium &&
+                                formatPrice(menu.prices.medium)}
+                            </span>
+                          </Button>
+                        </Col>
+                        <Col span={8}>
+                          <Button
+                            block
+                            onClick={() => handleAddService(menu, "long")}
+                            style={{
+                              height: 56,
+                              borderRadius: 10,
+                              display: "flex",
+                              flexDirection: "column",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              padding: 8,
+                            }}
+                          >
+                            <span style={{ fontWeight: 600 }}>롱</span>
+                            <span style={{ fontSize: 13, color: "#1890ff" }}>
+                              {menu.prices?.long &&
+                                formatPrice(menu.prices.long)}
+                            </span>
+                          </Button>
+                        </Col>
+                      </Row>
+                    </Card>
+                  )}
+                </Col>
+              ))}
+            </Row>
+          </div>
+
+          {/* 선택된 서비스 */}
+          <div
+            style={{
+              background:
+                selectedServices.length > 0
+                  ? "linear-gradient(135deg, #e6f7ff 0%, #bae7ff 100%)"
+                  : "#f5f5f5",
+              borderRadius: 16,
+              padding: 20,
+              marginBottom: 16,
+              minHeight: 120,
+              border:
+                selectedServices.length > 0 ? "2px solid #91d5ff" : "none",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: 12,
+              }}
+            >
+              <Text strong style={{ fontSize: 16 }}>
+                <ShoppingCartOutlined style={{ marginRight: 8 }} />
+                선택된 서비스
+              </Text>
+              {selectedServices.length > 0 && (
+                <Badge
+                  count={selectedServices.length}
+                  style={{ backgroundColor: "#1890ff" }}
+                />
+              )}
+            </div>
+
+            {selectedServices.length === 0 ? (
+              <div
+                style={{
+                  textAlign: "center",
+                  padding: "20px 0",
+                  color: "#999",
+                }}
+              >
+                <Text type="secondary" style={{ fontSize: 16 }}>
+                  위에서 서비스를 선택해주세요
+                </Text>
+              </div>
+            ) : (
+              <div style={{ maxHeight: 160, overflowY: "auto" }}>
+                {selectedServices.map((service, index) => (
+                  <div
+                    key={index}
+                    style={{
                       display: "flex",
                       justifyContent: "space-between",
                       alignItems: "center",
-                      borderRadius: 12,
-                      padding: "0 20px",
-                      background: "#fff",
-                      border: "2px solid #e8e8e8",
+                      padding: "12px 16px",
+                      background: "rgba(255,255,255,0.8)",
+                      borderRadius: 10,
+                      marginBottom: index < selectedServices.length - 1 ? 8 : 0,
                     }}
                   >
-                    <span style={{ fontSize: 17, fontWeight: 500 }}>
-                      {menu.name}
+                    <span style={{ fontSize: 16 }}>
+                      {service.name}
+                      {service.length && (
+                        <Tag
+                          color="blue"
+                          style={{ marginLeft: 8, fontSize: 13 }}
+                        >
+                          {service.length}
+                        </Tag>
+                      )}
                     </span>
                     <span
-                      style={{
-                        color: "#1890ff",
-                        fontSize: 17,
-                        fontWeight: 600,
-                      }}
+                      style={{ display: "flex", alignItems: "center", gap: 12 }}
                     >
-                      {formatPrice(menu.price)}
+                      <Text strong style={{ fontSize: 17, color: "#1890ff" }}>
+                        {formatPrice(service.price)}
+                      </Text>
+                      <Button
+                        type="text"
+                        danger
+                        icon={<DeleteOutlined style={{ fontSize: 18 }} />}
+                        onClick={() => handleRemoveService(index)}
+                        style={{
+                          width: 40,
+                          height: 40,
+                          borderRadius: 10,
+                        }}
+                      />
                     </span>
-                  </Button>
-                ) : (
-                  <Card
-                    size="small"
-                    style={{
-                      borderRadius: 12,
-                      border: "2px solid #e8e8e8",
-                    }}
-                    styles={{ body: { padding: 16 } }}
-                  >
-                    <div
-                      style={{
-                        fontWeight: 600,
-                        marginBottom: 12,
-                        fontSize: 17,
-                      }}
-                    >
-                      {menu.name}
-                    </div>
-                    <Row gutter={8}>
-                      <Col span={8}>
-                        <Button
-                          block
-                          onClick={() => handleAddService(menu, "short")}
-                          style={{
-                            height: 56,
-                            borderRadius: 10,
-                            display: "flex",
-                            flexDirection: "column",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            padding: 8,
-                          }}
-                        >
-                          <span style={{ fontWeight: 600 }}>숏</span>
-                          <span style={{ fontSize: 13, color: "#1890ff" }}>
-                            {menu.prices?.short &&
-                              formatPrice(menu.prices.short)}
-                          </span>
-                        </Button>
-                      </Col>
-                      <Col span={8}>
-                        <Button
-                          block
-                          onClick={() => handleAddService(menu, "medium")}
-                          style={{
-                            height: 56,
-                            borderRadius: 10,
-                            display: "flex",
-                            flexDirection: "column",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            padding: 8,
-                          }}
-                        >
-                          <span style={{ fontWeight: 600 }}>미듐</span>
-                          <span style={{ fontSize: 13, color: "#1890ff" }}>
-                            {menu.prices?.medium &&
-                              formatPrice(menu.prices.medium)}
-                          </span>
-                        </Button>
-                      </Col>
-                      <Col span={8}>
-                        <Button
-                          block
-                          onClick={() => handleAddService(menu, "long")}
-                          style={{
-                            height: 56,
-                            borderRadius: 10,
-                            display: "flex",
-                            flexDirection: "column",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            padding: 8,
-                          }}
-                        >
-                          <span style={{ fontWeight: 600 }}>롱</span>
-                          <span style={{ fontSize: 13, color: "#1890ff" }}>
-                            {menu.prices?.long && formatPrice(menu.prices.long)}
-                          </span>
-                        </Button>
-                      </Col>
-                    </Row>
-                  </Card>
-                )}
-              </Col>
-            ))}
-          </Row>
-        </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
 
-        {/* 선택된 서비스 */}
-        <div
-          style={{
-            background:
-              selectedServices.length > 0
-                ? "linear-gradient(135deg, #e6f7ff 0%, #bae7ff 100%)"
-                : "#f5f5f5",
-            borderRadius: 16,
-            padding: 20,
-            marginBottom: 16,
-            minHeight: 120,
-            border: selectedServices.length > 0 ? "2px solid #91d5ff" : "none",
-          }}
-        >
+          {/* 총액 및 버튼 */}
           <div
             style={{
               display: "flex",
               justifyContent: "space-between",
               alignItems: "center",
-              marginBottom: 12,
+              padding: "20px 0 0",
+              borderTop: "2px solid #f0f0f0",
             }}
           >
-            <Text strong style={{ fontSize: 16 }}>
-              <ShoppingCartOutlined style={{ marginRight: 8 }} />
-              선택된 서비스
-            </Text>
-            {selectedServices.length > 0 && (
-              <Badge
-                count={selectedServices.length}
-                style={{ backgroundColor: "#1890ff" }}
-              />
-            )}
-          </div>
-
-          {selectedServices.length === 0 ? (
-            <div
-              style={{ textAlign: "center", padding: "20px 0", color: "#999" }}
-            >
-              <Text type="secondary" style={{ fontSize: 16 }}>
-                위에서 서비스를 선택해주세요
+            <div>
+              <Text style={{ fontSize: 16, color: "#666" }}>총 결제 금액</Text>
+              <br />
+              <Text
+                strong
+                style={{
+                  fontSize: 36,
+                  color: "#1890ff",
+                  fontWeight: 700,
+                }}
+              >
+                {formatPrice(totalPrice)}
               </Text>
             </div>
-          ) : (
-            <div style={{ maxHeight: 160, overflowY: "auto" }}>
-              {selectedServices.map((service, index) => (
-                <div
-                  key={index}
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    padding: "12px 16px",
-                    background: "rgba(255,255,255,0.8)",
-                    borderRadius: 10,
-                    marginBottom: index < selectedServices.length - 1 ? 8 : 0,
-                  }}
-                >
-                  <span style={{ fontSize: 16 }}>
-                    {service.name}
-                    {service.length && (
-                      <Tag color="blue" style={{ marginLeft: 8, fontSize: 13 }}>
-                        {service.length}
-                      </Tag>
-                    )}
-                  </span>
-                  <span
-                    style={{ display: "flex", alignItems: "center", gap: 12 }}
-                  >
-                    <Text strong style={{ fontSize: 17, color: "#1890ff" }}>
-                      {formatPrice(service.price)}
-                    </Text>
-                    <Button
-                      type="text"
-                      danger
-                      icon={<DeleteOutlined style={{ fontSize: 18 }} />}
-                      onClick={() => handleRemoveService(index)}
-                      style={{
-                        width: 40,
-                        height: 40,
-                        borderRadius: 10,
-                      }}
-                    />
-                  </span>
-                </div>
-              ))}
+            <div style={{ display: "flex", gap: 12 }}>
+              <Button
+                size="large"
+                onClick={handleCancel}
+                style={{
+                  height: 60,
+                  paddingInline: 32,
+                  fontSize: 18,
+                  borderRadius: 14,
+                }}
+              >
+                취소
+              </Button>
+              <Button
+                type="primary"
+                size="large"
+                onClick={handleSubmit}
+                disabled={selectedServices.length === 0}
+                icon={<CheckOutlined style={{ fontSize: 20 }} />}
+                style={{
+                  height: 60,
+                  paddingInline: 40,
+                  fontSize: 18,
+                  fontWeight: 600,
+                  borderRadius: 14,
+                  boxShadow: "0 4px 12px rgba(24, 144, 255, 0.3)",
+                }}
+              >
+                시술 시작
+              </Button>
             </div>
-          )}
-        </div>
-
-        {/* 총액 및 버튼 */}
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            padding: "20px 0 0",
-            borderTop: "2px solid #f0f0f0",
-          }}
-        >
-          <div>
-            <Text style={{ fontSize: 16, color: "#666" }}>총 결제 금액</Text>
-            <br />
-            <Text
-              strong
-              style={{
-                fontSize: 36,
-                color: "#1890ff",
-                fontWeight: 700,
-              }}
-            >
-              {formatPrice(totalPrice)}
-            </Text>
           </div>
-          <div style={{ display: "flex", gap: 12 }}>
-            <Button
-              size="large"
-              onClick={handleCancel}
-              style={{
-                height: 60,
-                paddingInline: 32,
-                fontSize: 18,
-                borderRadius: 14,
-              }}
-            >
-              취소
-            </Button>
-            <Button
-              type="primary"
-              size="large"
-              onClick={handleSubmit}
-              disabled={selectedServices.length === 0}
-              icon={<CheckOutlined style={{ fontSize: 20 }} />}
-              style={{
-                height: 60,
-                paddingInline: 40,
-                fontSize: 18,
-                fontWeight: 600,
-                borderRadius: 14,
-                boxShadow: "0 4px 12px rgba(24, 144, 255, 0.3)",
-              }}
-            >
-              시술 시작
-            </Button>
-          </div>
-        </div>
-      </Form>
+        </Form>
     </Modal>
   );
 }

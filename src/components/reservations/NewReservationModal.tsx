@@ -285,11 +285,11 @@ export function NewReservationModal({
                   </Select>
                 )}
 
-              {service.price > 0 && (
-                <Text strong>{formatPrice(service.price)}</Text>
-              )}
-            </Space>
-          </div>
+                {service.price > 0 && (
+                  <Text strong>{formatPrice(service.price)}</Text>
+                )}
+              </Space>
+            </div>
         ))}
 
         <Button
